@@ -1,2 +1,2 @@
-./engine &
-./testGUI 
+./src/engine &
+./src/testGUI 
