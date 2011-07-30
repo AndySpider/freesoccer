@@ -301,7 +301,7 @@ static int process_evt(void)
             break;
         case FREEKICK:
             printf("Freekick\n");
-            generate_pos(FREEKICK);
+            //generate_pos(FREEKICK);
             break;
         case CORNER:
             printf("Corner\n");
@@ -431,13 +431,13 @@ static int detect_collision(void)
                 else if (match.team1.players[i].attr.body < match.team2.players[j].attr.body)
                 {
                     Direction dir = match.team1.players[i].direct;
-                    Speed spd = generate_speed(dir, 1, speed_per_power);
+                    Speed spd = generate_speed(dir, 0.7, speed_per_power);
                     act_tumble(&match.team1.players[i], dir, spd);
                 }
                 else if (match.team1.players[i].attr.body > match.team2.players[j].attr.body)
                 {
                     Direction dir = match.team2.players[j].direct;
-                    Speed spd = generate_speed(dir, 1, speed_per_power);
+                    Speed spd = generate_speed(dir, 0.7, speed_per_power);
                     act_tumble(&match.team2.players[j], dir, spd);
                 }
             }
@@ -562,7 +562,7 @@ static int action_on_cmd(struct Cmd command)
     {
         if (rbt_i_have_ball(focuser))
         {
-            Direction dirt = focuser->direct;
+            Direction dirt = {Lfield - focuser->pos.x, Wfield/2.0 - focuser->pos.y, 0.0};
             dirt.z = sqrt(dirt.x*dirt.x + dirt.y*dirt.y);
             if (act_shot(focuser, dirt, generate_speed(dirt, command.power, speed_per_power)) == -1)
                 act_runto(focuser, match.ball.pos, 10);
@@ -571,7 +571,7 @@ static int action_on_cmd(struct Cmd command)
         {
             printf("shovel\n");
             Direction dirt = direct_to_ball(focuser);
-            Speed spd = generate_speed(dirt, 2, speed_per_power);
+            Speed spd = generate_speed(dirt, 8, speed_per_power);
             act_shovel(focuser, dirt, spd);
         }
     }
@@ -884,8 +884,8 @@ restart:
 
         /* 球迹计算 */
 
-        float acceleration;
-        printf("ballpz: %f\n", match.ball.pos.z);
+        float acce_factor;
+        Speed acceleration;
         if (match.ball.kicked == 1)
         {
             match.ball.kicked = 0;
@@ -895,48 +895,23 @@ restart:
             if (match.ball.pos.z > 0.0)
             {
                 match.ball.spd.z = match.ball.spd.z - (9.8*Meter/(match.nTick*match.nTick));
-                acceleration = 0.2;
+                acce_factor = 0.5;
             }
             else 
             {
-                match.ball.spd.z = - match.ball.spd.z * 0.5;
-                acceleration = 2.0;
+                if (match.ball.spd.z*match.ball.spd.z >= 0.5*Meter/match.nTick)
+                    match.ball.spd.z = - match.ball.spd.z * 0.4;
+                else
+                    match.ball.spd.z = 0.0;
+                acce_factor = 3.0;
             }
 
-            if (match.ball.spd.x > 0)
-            {
-                match.ball.spd.x = match.ball.spd.x - (acceleration*Meter/(match.nTick*match.nTick));
-                if (match.ball.spd.x < 0)
-                    match.ball.spd.x = 0;
-            }
-            else if (match.ball.spd.x < 0)
-            {
-                match.ball.spd.x = match.ball.spd.x + (acceleration*Meter/(match.nTick*match.nTick));
-                if (match.ball.spd.x > 0)
-                    match.ball.spd.x = 0;
-            }
 
-            if (match.ball.spd.y > 0)
-            {
-                match.ball.spd.y = match.ball.spd.y - (acceleration*Meter/(match.nTick*match.nTick));
-                if (match.ball.spd.y < 0)
-                    match.ball.spd.y = 0;
-            }
-            else if (match.ball.spd.y < 0)
-            {
-                match.ball.spd.y = match.ball.spd.y + (acceleration*Meter/(match.nTick*match.nTick));
-                if (match.ball.spd.y > 0)
-                    match.ball.spd.y = 0;
-            }
-
+            acceleration = generate_speed(counter_vector(match.ball.spd), acce_factor, speed_per_power);
+            match.ball.spd.x += (acceleration.x/match.nTick);
+            match.ball.spd.y += (acceleration.y/match.nTick);
         }
 
-        /*
-        if (match.ball.spd.x < 0)
-            match.ball.spd.x = 0;
-        if (match.ball.spd.y < 0)
-            match.ball.spd.y = 0;
-            */
     }
     clean_up();
     return 0;

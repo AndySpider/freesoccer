@@ -27,10 +27,13 @@ static void rbt_keeper_robot(struct Player *pp, struct Match *mat)
         }
         else if (rbt_ball_flying_to_gate(bdest_pos, t->id))
         {
-            dirt = pounce_direction(bpos, bdest_pos, pp->pos);
-            spd = generate_speed(dirt, 5, speed_per_power); 
-            dirt = direct_to_ball(pp);
-            act_pounce(pp, dirt, spd);
+            if (match.ball.pos.x > 60*Meter || match.ball.pos.x < 45*Meter)
+            {
+                dirt = pounce_direction(bpos, bdest_pos, pp->pos);
+                spd = generate_speed(dirt, 5, speed_per_power); 
+                dirt = direct_to_ball(pp);
+                act_pounce(pp, dirt, spd);
+            }
         }
         else
         {
@@ -121,7 +124,7 @@ static void rbt_middle_robot(struct Player *pp, struct Match *mat)
         }
         else if (dis <= 4*Meter)
         {
-            Speed spd = generate_speed(dirt, 2, speed_per_power);
+            Speed spd = generate_speed(dirt, 5, speed_per_power);
             act_shovel(pp, dirt, spd); 
         }
         else

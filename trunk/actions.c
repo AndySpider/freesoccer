@@ -437,7 +437,7 @@ int act_short_pass(struct Player *pp)
     }
     else
     {
-        float dis = distance(topasser->pos, pp->pos);
+        float dis = distance(topasser->pos, pp->pos) + 2.0*Meter;
         power =  2*sqrt(dis);
         dir.x = topasser->pos.x - pp->pos.x;
         dir.y = topasser->pos.y - pp->pos.y;
