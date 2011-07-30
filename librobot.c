@@ -321,6 +321,8 @@ float rbt_rbt_pass_factor(struct Player *pp)
 Position rbt_judge_ball_dest(struct Player *pp)
 {
     float spd_value;
+    float acce_factor;
+    Speed acceleration;
     Speed bspd = match.ball.spd;
     Position bpos = rbt_where_ball();
     do 
@@ -328,13 +330,29 @@ Position rbt_judge_ball_dest(struct Player *pp)
         bpos.x += bspd.x;
         bpos.y += bspd.y;
         bpos.z += bspd.z;
+        if (bpos.z < 0.0)
+            bpos.z = 0.0;
 
-        bspd.x *= 0.8;
-        bspd.y *= 0.8;
-        bspd.z *= 0.8;
+        if ( bspd.z > 0.0)
+        {
+            bspd.z = bspd.z - (9.8*Meter/(match.nTick*match.nTick));
+            acce_factor = 0.5;
+        }
+        else 
+        {
+            if (bspd.z*bspd.z >= 0.5*Meter/match.nTick)
+                bspd.z = - bspd.z * 0.4;
+            else
+                bspd.z = 0.0;
+            acce_factor = 2.0;
+        }
 
+        acceleration = generate_speed(counter_vector(bspd), acce_factor, speed_per_power);
+        bspd.x += (acceleration.x/match.nTick);
+        bspd.y += (acceleration.y/match.nTick);
         spd_value = modular(bspd);
-    } while (spd_value > (0.1 * 1.0*Meter / match.nTick)); // > 0.1m/s
+
+    } while (in_scope(full_field, bpos) && spd_value >= 0.1*Meter/match.nTick); 
     return bpos;
 }
 
@@ -555,7 +573,6 @@ Direction pounce_direction(Position bpos, Position bdest_pos, Position keeper_po
     Position p;
     p = intersection(bpos, bdest_pos, keeper_pos);
 
-    printf("bpos: %f, %f, %f; bdest_pos: %f, %f, %f; keeppos: %f, %f, %f; inter: %f, %f, %f;;\n", bpos.x, bpos.y, bpos.z, bdest_pos.x, bdest_pos.y, bdest_pos.z, keeper_pos.x, keeper_pos.y, keeper_pos.z, p.x, p.y, p.z);
     Direction dirt = {p.x - keeper_pos.x, p.y - keeper_pos.y, p.z - keeper_pos.z};
     return dirt;
 }

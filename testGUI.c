@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include "stdlib.h"
 #include "global.h"
-#include "coordiante.h"
+#include "coordinate.h"
 #include "comm.h"
 
 struct Ball ball;
@@ -16,7 +16,7 @@ int holder = -1;
 struct Team team1 = {0, 1, A442, BALANCED, players1};
 struct Team team2 = {0, 2, A442, BALANCED, players2};
 
-int nTick = 25;
+int nTick = 45;
 struct Status sts;
 struct Cmd c;
 //struct Cmd pre_c;
@@ -31,7 +31,9 @@ int scale_ratio = 5;
 float Lextent = 20.0;
 float Wextent = 20.0;
 
-int wsad = 0;
+GLuint spinx = 45;
+GLfloat sdepth = 0.0;
+GLuint spinz = 30;
 
 void init_players(void)
 {
@@ -150,11 +152,17 @@ void drawfield(void)
     // 2 gates
     glLineWidth(4.0);
     glColor3f(0.0, 1.0, 0.0);
-    glBegin(GL_LINES);
+    glBegin(GL_LINE_LOOP);
     glVertex3f(0.0, (Wfield*scale_ratio - Wgate*scale_ratio)/2.0, 0.0);
     glVertex3f(0.0, (Wfield*scale_ratio + Wgate*scale_ratio)/2.0, 0.0);
+    glVertex3f(0.0, (Wfield*scale_ratio + Wgate*scale_ratio)/2.0, Hgate*scale_ratio);
+    glVertex3f(0.0, (Wfield*scale_ratio - Wgate*scale_ratio)/2.0, Hgate*scale_ratio);
+    glEnd();
+    glBegin(GL_LINE_LOOP);
     glVertex3f(Lfield*scale_ratio,(Wfield*scale_ratio - Wgate*scale_ratio)/2.0, 0.0);
     glVertex3f(Lfield*scale_ratio,(Wfield*scale_ratio + Wgate*scale_ratio)/2.0, 0.0);
+    glVertex3f(Lfield*scale_ratio,(Wfield*scale_ratio + Wgate*scale_ratio)/2.0, Hgate*scale_ratio);
+    glVertex3f(Lfield*scale_ratio,(Wfield*scale_ratio - Wgate*scale_ratio)/2.0, Hgate*scale_ratio);
     glEnd();
 }
 void init(void)
@@ -201,6 +209,7 @@ void reshape(int w, int h)
    else 
       glOrtho ((0.0 - Lextent)*(GLfloat)w/(GLfloat)h, 
          (Lfield*scale_ratio + Lextent)*(GLfloat)w/(GLfloat)h , 0.0 - Wextent, Wfield*scale_ratio + Wextent, -100.0, 100.0);
+   gluPerspective(60.0, (GLfloat) w/(GLfloat) h, 1.0, 20.0);
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
 }
@@ -221,7 +230,7 @@ void keyboard(unsigned char key, int x, int y)
             break;
         case 32: // space
             strcpy(c.name, "SHOT");
-            c.power = 10;
+            c.power = 15;
             break;
         case 'p': // shift 
             strcpy(c.name, "SPASS");
@@ -244,7 +253,7 @@ void keyboard(unsigned char key, int x, int y)
             break;
         case 'l':
             strcpy(c.name, "LPASS");
-            c.power = 11;
+            c.power = 16;
             break;
         case 'k':
             strcpy(c.name, "MTOBALL");
@@ -272,11 +281,17 @@ void set_positions(struct Status *sts)
 void display()
 {
     int i;
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_PROJECTION);
-    glLoadIdentity();  // !!!!!!!!!!!!!!
+    //glLoadIdentity();  // !!!!!!!!!!!!!!
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    glClear(GL_COLOR_BUFFER_BIT);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    glRotatef ((GLfloat) spinx, 1.0, 0.0, 0.0);
+    glTranslatef(0.0, 0.0, -sdepth);
+    glRotatef ((GLfloat) spinz, 0.0, 0.0, 1.0);
+
     //glColor3f(1.0, 1.0, 1.0);
     glOrtho(0.0 - Lextent, Lfield*scale_ratio + Lextent, 0.0-Wextent, Wfield*scale_ratio + Wextent, -100.0, 100.0); 
     drawfield();
@@ -314,10 +329,48 @@ void playing(int val)
         }
         strcpy(c.name, "NONE");
         display();
-        glutTimerFunc (17, playing, 0);
+        glutTimerFunc (22, playing, 0);
     }
 }
     
+void mouse(int button, int state, int x, int y)
+{
+    switch (button) {
+        case GLUT_LEFT_BUTTON:
+            switch (state) {
+                case GLUT_DOWN:
+                    spinx = (spinx + 5) % 360; 
+                    glutPostRedisplay();
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case GLUT_MIDDLE_BUTTON:
+            switch (state) {
+                case GLUT_DOWN:
+                    sdepth += 0.1; 
+                    glutPostRedisplay();
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case GLUT_RIGHT_BUTTON:
+            switch (state) {
+                case GLUT_UP:
+                    spinz = (spinz + 5) % 360; 
+                    glutPostRedisplay();
+                    break;
+                default:
+                    break;
+            }
+            break;
+        default:
+            break;
+    }
+}
+
 /*  Main Loop
  *  Open window with initial window size, title bar, 
  *  color index display mode, and handle input events.
@@ -330,6 +383,7 @@ int main(int argc, char** argv)
    glutCreateWindow (argv[0]);
    init();
    glutReshapeFunc (reshape);
+   glutMouseFunc(mouse);
    glutKeyboardFunc (keyboard);
    glutTimerFunc (17, playing, 0);
    glutMainLoop();

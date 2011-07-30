@@ -13,6 +13,9 @@ float distance(Position pos1, Position pos2)
 
 Direction normalizing(Direction dir)
 {
+    if (dir.x == 0 && dir.y == 0 && dir.z == 0)
+        return dir;
+
     Direction d, o;
     float len;
     o.x = 0;
@@ -194,4 +197,10 @@ struct Vector reflecting(struct Vector inc_vec, struct Vector nor_vec)
     Position ref_vertex = {int_point.x * 2, int_point.y * 2, int_point.z * 2};
     struct Vector reflect = {ref_vertex.x - inc_vertex.x, ref_vertex.y - inc_vertex.y, ref_vertex.z - inc_vertex.z};
     return reflect;
+}
+
+struct Vector counter_vector(struct Vector vec)
+{
+    struct Vector v = {-vec.x, -vec.y, -vec.z};
+    return v;
 }

@@ -22,5 +22,6 @@ Position intersection(Position, Position, Position);
 struct Vector add_vector(struct Vector, struct Vector);
 int equal_vector(struct Vector, struct Vector);
 struct Vector reflecting(struct Vector, struct Vector);
+struct Vector counter_vector(struct Vector);
 
 #endif

@@ -48,7 +48,7 @@ int act_short_pass(struct Player *);
 #define FT_TURN     0.1
 #define FR_POUNCE   10
 #define FT_POUNCE   0.1
-#define FR_TUMBLE   10 
+#define FR_TUMBLE   15 
 #define FT_TUMBLE   0.1
 #define FR_DRIBBLE  10
 #define FT_DRIBBLE  0.02
