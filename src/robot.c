@@ -48,7 +48,7 @@ static void rbt_keeper_robot(struct Player *pp, struct Match *mat)
         dirt.z = 0.0;
         act_stay(pp, dirt);
         dirt.z = 1.0;
-        act_shot(pp, pp->direct, generate_speed(dirt, 10, speed_per_power));
+        act_shot(pp, pp->direct, generate_speed(dirt, 15, speed_per_power));
     }
 }
 
