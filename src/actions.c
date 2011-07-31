@@ -483,18 +483,6 @@ int act_dribble(struct Player *pp, Direction dirt, Speed spd)
         return -1;
 
     return 0;
-    /*if (dis <= HOLD_DISTANCE)
-    {
-        if (angle(dirt, pp->direct) > 5*PI/180)
-            act_hold(pp, spd, ball);
-        else
-        {
-            act_kick(pp, spd, spd, ball);
-            act_run(pp, spd, spd);
-        }
-    }
-    else
-        act_run(pp, spd, spd);*/
 }
 
 int act_tumble(struct Player *pp, Speed spd, Direction dirt)

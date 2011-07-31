@@ -481,7 +481,7 @@ static void move_to_ball(struct Player *pp, int power)
 static void long_pass(struct Player *pp, int power)
 {
     Direction dirt = pp->direct;
-    dirt.z = sqrt(dirt.x*dirt.x + dirt.y*dirt.y);
+    dirt.z = sqrt(dirt.x*dirt.x + dirt.y*dirt.y)/2.0;
     Speed spd;
     spd = generate_speed(dirt, power, ((1.0/105.0)*Lfield/match.nTick));
     if (act_kick(pp, pp->direct, spd) == -1)
@@ -563,7 +563,7 @@ static int action_on_cmd(struct Cmd command)
         if (rbt_i_have_ball(focuser))
         {
             Direction dirt = {Lfield - focuser->pos.x, Wfield/2.0 - focuser->pos.y, 0.0};
-            dirt.z = sqrt(dirt.x*dirt.x + dirt.y*dirt.y);
+            dirt.z = sqrt(dirt.x*dirt.x + dirt.y*dirt.y)/2.0;
             if (act_shot(focuser, dirt, generate_speed(dirt, command.power, speed_per_power)) == -1)
                 act_runto(focuser, match.ball.pos, 10);
         }

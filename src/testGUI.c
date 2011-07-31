@@ -31,9 +31,9 @@ int scale_ratio = 5;
 float Lextent = 20.0;
 float Wextent = 20.0;
 
-GLuint spinx = 45;
+GLuint spinx = 45.0;
 GLfloat sdepth = 0.0;
-GLuint spinz = 30;
+GLuint spinz = 30.0;
 
 void init_players(void)
 {
@@ -209,7 +209,7 @@ void reshape(int w, int h)
    else 
       glOrtho ((0.0 - Lextent)*(GLfloat)w/(GLfloat)h, 
          (Lfield*scale_ratio + Lextent)*(GLfloat)w/(GLfloat)h , 0.0 - Wextent, Wfield*scale_ratio + Wextent, -100.0, 100.0);
-   gluPerspective(60.0, (GLfloat) w/(GLfloat) h, 1.0, 20.0);
+   gluPerspective(45.0, (GLfloat) w/(GLfloat) h, 1.0, Lfield*scale_ratio);
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
 }
@@ -295,7 +295,6 @@ void display()
     //glColor3f(1.0, 1.0, 1.0);
     glOrtho(0.0 - Lextent, Lfield*scale_ratio + Lextent, 0.0-Wextent, Wfield*scale_ratio + Wextent, -100.0, 100.0); 
     drawfield();
-    printf("bpos: %f, %f, %f\n", ball.pos.x, ball.pos.y, ball.pos.z);
     for (i=0; i<11; i++)
     {
         //printf("x:%f, y:%f, z:%f ;", players1[i].pos.x,players1[i].pos.y,players1[i].pos.z); 
