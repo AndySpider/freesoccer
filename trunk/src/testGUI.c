@@ -97,9 +97,16 @@ void drawplayer(struct Player p)
 }
 void drawfield(void)
 {
-    glColor3f(1.0, 1.0, 1.0);
+    glColor3f(0.1, 0.2, 0.1);
     glLineWidth(3.0);
     // full_field
+    glBegin(GL_POLYGON);
+    glVertex2f(0.0, 0.0);
+    glVertex2f(Lfield*scale_ratio, 0.0);
+    glVertex2f(Lfield*scale_ratio, Wfield*scale_ratio);
+    glVertex2f(0.0, Wfield*scale_ratio);
+    glEnd();
+    glColor3f(1.0, 1.0, 1.0);
     glBegin(GL_LINE_LOOP);
     glVertex2f(0.0, 0.0);
     glVertex2f(Lfield*scale_ratio, 0.0);
@@ -107,6 +114,7 @@ void drawfield(void)
     glVertex2f(0.0, Wfield*scale_ratio);
     glEnd();
     // gate_field_1
+    glColor3f(1.0, 1.0, 1.0);
     glLineWidth(2.0);
     glBegin(GL_LINE_STRIP);
     glVertex2f(0.0, (Wfield*scale_ratio - Wgatearea*scale_ratio)/2.0);
@@ -203,15 +211,16 @@ void reshape(int w, int h)
    glViewport(0, 0, (GLsizei) w, (GLsizei) h);
    glMatrixMode(GL_PROJECTION);
    glLoadIdentity();
+   gluPerspective(60.0, (GLfloat) w/(GLfloat) h, 0.1, Lfield*scale_ratio);
    if (w <= h) 
       glOrtho (0.0 - Lextent, Lfield*scale_ratio + Lextent, 
          (0.0 - Wextent)*(GLfloat)h/(GLfloat)w, (Wfield*scale_ratio + Wextent)*(GLfloat)h/(GLfloat)w, -100.0,100.0);
    else 
       glOrtho ((0.0 - Lextent)*(GLfloat)w/(GLfloat)h, 
          (Lfield*scale_ratio + Lextent)*(GLfloat)w/(GLfloat)h , 0.0 - Wextent, Wfield*scale_ratio + Wextent, -100.0, 100.0);
-   gluPerspective(45.0, (GLfloat) w/(GLfloat) h, 1.0, Lfield*scale_ratio);
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
+   gluLookAt(0.0, 0.0, 30.0*scale_ratio, Lfield*scale_ratio/2.0, Wfield*scale_ratio/2.0, 0.0, 0, 0, 1);
 }
 
 void clear_cmd(int val)
@@ -281,9 +290,8 @@ void set_positions(struct Status *sts)
 void display()
 {
     int i;
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT); //|| GL_DEPTH_BUFFER_BIT);
     glEnable(GL_PROJECTION);
-    //glLoadIdentity();  // !!!!!!!!!!!!!!
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glMatrixMode(GL_MODELVIEW);
