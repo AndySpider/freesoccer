@@ -237,10 +237,6 @@ void reshape(int w, int h)
    gluPerspective(90, (GLfloat)w/(GLfloat)h, 1.0, 1000.0);
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
-   lookX = ball.pos.x*scale_ratio;
-   lookY = (ball.pos.y - 5)*scale_ratio;
-   lookZ = 20.0*scale_ratio;
-   gluLookAt(lookX, lookY, lookZ, ball.pos.x*scale_ratio, ball.pos.y*scale_ratio, 0.0, 0, 1, 0);
 }
 
 void clear_cmd(int val)
@@ -319,8 +315,8 @@ void display()
     glTranslatef(0.0, 0.0, -sdepth);
     glRotatef ((GLfloat) spinz, 0.0, 0.0, 1.0);
     lookX = ball.pos.x*scale_ratio;
-    lookY = (ball.pos.y - 5)*scale_ratio;
-    lookZ = 20.0*scale_ratio;
+    lookY = (ball.pos.y - 15)*scale_ratio;
+    lookZ = (25.0)*scale_ratio;
     gluLookAt(lookX, lookY, lookZ, ball.pos.x*scale_ratio, ball.pos.y*scale_ratio, 0.0, 0, 1, 0);
 
     drawfield();
