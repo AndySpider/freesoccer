@@ -22,7 +22,6 @@ int ticks = 0;
 static void update_timer(void)
 {
     ticks += 1;
-    printf("ticks: %d\n",ticks);
     timer = ticks*1.0 / match.nTick;
 }
 
@@ -117,6 +116,7 @@ static void init_players_pos(struct Match *mat)
     }
 }
 
+/* Generate positions of players and ball according to specfic events */
 static void generate_pos(Event_ID eid)
 {
     struct Event evt = match.evt;
@@ -278,6 +278,7 @@ static void clear_event(void)
     match.evt.eid = NONE;
 }
 
+/* New event detected, do call this function to set */
 static void set_event(struct Event new_evt)
 {
     struct Event c_evt = match.evt;
@@ -363,6 +364,7 @@ struct Player *id2player(int id)
     return NULL;
 }
 
+/* Put players' speeds into action */
 static int players_act(void)
 {
     int i;
@@ -395,6 +397,7 @@ static int players_act(void)
     return 0;
 }
 
+/* Detect collisions between players */
 static int detect_collision(void)
 {
     int i, j;
@@ -562,7 +565,7 @@ static int action_on_cmd(struct Cmd command)
     {
         if (rbt_i_have_ball(focuser))
         {
-            Direction dirt = {Lfield - focuser->pos.x, Wfield/2.0 - focuser->pos.y, 0.0};
+            Direction dirt = {Lfield - 2*Meter - focuser->pos.x, Wfield/2.0 - focuser->pos.y, 0.0};
             dirt.z = sqrt(dirt.x*dirt.x + dirt.y*dirt.y)/2.0;
             if (act_shot(focuser, dirt, generate_speed(dirt, command.power, speed_per_power)) == -1)
                 act_runto(focuser, match.ball.pos, 10);
@@ -587,6 +590,7 @@ static int action_on_cmd(struct Cmd command)
     return 0;
 }
         
+/* For uncontrolable players, using inside robots to decide next actions */
 static int call_robot(void)
 {
     int i;
@@ -628,6 +632,7 @@ static void enable_event(void)
     return;
 }
 
+/* TODO: this function didn't take first_half into consideration */
 static Event_ID detect_ball_event(void)
 {
     Position bpos;
@@ -672,6 +677,7 @@ static Event_ID detect_ball_event(void)
         else
         {
             printf("GOAL2!\n");
+            match.team2.score++;
             new_evt.eid = GOAL;
             new_evt.which_team = 2;
             new_evt.epos = bpos;
@@ -702,6 +708,7 @@ static Event_ID detect_ball_event(void)
         else
         {
             printf("GOAL1!\n");
+            match.team1.score++;
             new_evt.eid = GOAL;
             new_evt.which_team = 1;
             new_evt.epos = bpos;
@@ -831,8 +838,8 @@ restart:
             continue;
         }
         //6. 无则： 调用Robot计算所有人的下一步反应动作
-        //7. 根据反应动作，计算成各球员姿态（一个动作必须完成一个动作周期，否则将新的反应动作直接丢弃！(聚焦球员的动作保存起来））
-        //8. 将计算完成的姿态、球的位置、持球人、聚焦人发送给GUI
+        //7. 根据反应动作，计算成各球员位置
+        //8. 将计算完成的各球员位置、球的位置、持球人、聚焦人发送给GUI
         //9. 在GUI渲染的同时，完成：
         //          检测球员冲撞，设置冲撞动作
         //          判断球场事件
@@ -840,7 +847,7 @@ restart:
         //          球迹计算
         //   回到5.
 
-        /* see if it's time to disable event */
+        /* See if it's time to enable event */
         if (match.evt.disabled == 1 
                 && in_scope(full_field, match.ball.pos) 
                 && (match.ball.spd.x+match.ball.spd.y+match.ball.spd.z != 0))

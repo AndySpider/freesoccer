@@ -31,9 +31,15 @@ int scale_ratio = 5;
 float Lextent = 20.0;
 float Wextent = 20.0;
 
-GLuint spinx = 45.0;
+GLuint spinx = 0.0;
 GLfloat sdepth = 0.0;
-GLuint spinz = 30.0;
+GLuint spinz = 0.0;
+GLfloat beginX = 0.0;
+GLfloat beginY = 0.0;
+GLfloat beginM = 0.0;
+GLfloat lookX;
+GLfloat lookY;
+GLfloat lookZ;
 
 void init_players(void)
 {
@@ -41,12 +47,18 @@ void init_players(void)
     for (i=0; i<11; i++)
     {
         players1[i].id = i;
-        players1[i].attr.body = 90;
+        if (i % 2 == 0)
+            players1[i].attr.body = 100;
+        else
+            players2[i].attr.body = 90;
     }
     for (i=0; i<11; i++)
     {
         players2[i].id = i+11;
-        players2[i].attr.body = 90;
+        if (i % 2 == 0)
+            players1[i].attr.body = 100;
+        else
+            players2[i].attr.body = 90;
     }
 
 }
@@ -97,8 +109,9 @@ void drawplayer(struct Player p)
 }
 void drawfield(void)
 {
-    glColor3f(0.1, 0.2, 0.1);
+    glColor3f(1, 1, 1);
     glLineWidth(3.0);
+    glColor3f(0.1, 0.2, 0.1);
     // full_field
     glBegin(GL_POLYGON);
     glVertex2f(0.0, 0.0);
@@ -112,6 +125,16 @@ void drawfield(void)
     glVertex2f(Lfield*scale_ratio, 0.0);
     glVertex2f(Lfield*scale_ratio, Wfield*scale_ratio);
     glVertex2f(0.0, Wfield*scale_ratio);
+    glEnd();
+    glBegin(GL_LINES);
+    glVertex2f(0.0, 0.0);
+    glVertex3f(0.0, 0.0, 10.0);
+    glVertex2f(Lfield*scale_ratio, 0.0);
+    glVertex3f(Lfield*scale_ratio, 0.0, 10.0);
+    glVertex2f(Lfield*scale_ratio, Wfield*scale_ratio);
+    glVertex3f(Lfield*scale_ratio, Wfield*scale_ratio, 10.0);
+    glVertex2f(0.0, Wfield*scale_ratio);
+    glVertex3f(0.0, Wfield*scale_ratio, 10.0);
     glEnd();
     // gate_field_1
     glColor3f(1.0, 1.0, 1.0);
@@ -211,16 +234,13 @@ void reshape(int w, int h)
    glViewport(0, 0, (GLsizei) w, (GLsizei) h);
    glMatrixMode(GL_PROJECTION);
    glLoadIdentity();
-   gluPerspective(60.0, (GLfloat) w/(GLfloat) h, 0.1, Lfield*scale_ratio);
-   if (w <= h) 
-      glOrtho (0.0 - Lextent, Lfield*scale_ratio + Lextent, 
-         (0.0 - Wextent)*(GLfloat)h/(GLfloat)w, (Wfield*scale_ratio + Wextent)*(GLfloat)h/(GLfloat)w, -100.0,100.0);
-   else 
-      glOrtho ((0.0 - Lextent)*(GLfloat)w/(GLfloat)h, 
-         (Lfield*scale_ratio + Lextent)*(GLfloat)w/(GLfloat)h , 0.0 - Wextent, Wfield*scale_ratio + Wextent, -100.0, 100.0);
+   gluPerspective(90, (GLfloat)w/(GLfloat)h, 1.0, 1000.0);
    glMatrixMode(GL_MODELVIEW);
    glLoadIdentity();
-   gluLookAt(0.0, 0.0, 30.0*scale_ratio, Lfield*scale_ratio/2.0, Wfield*scale_ratio/2.0, 0.0, 0, 0, 1);
+   lookX = ball.pos.x*scale_ratio;
+   lookY = (ball.pos.y - 5)*scale_ratio;
+   lookZ = 20.0*scale_ratio;
+   gluLookAt(lookX, lookY, lookZ, ball.pos.x*scale_ratio, ball.pos.y*scale_ratio, 0.0, 0, 1, 0);
 }
 
 void clear_cmd(int val)
@@ -270,6 +290,9 @@ void keyboard(unsigned char key, int x, int y)
             break;
         case 'r':
             strcpy(c.name, "RESTART");
+            spinx = 0.0;
+            spinz = 0.0;
+
             break;
     }
 }
@@ -290,23 +313,19 @@ void set_positions(struct Status *sts)
 void display()
 {
     int i;
-    glClear(GL_COLOR_BUFFER_BIT); //|| GL_DEPTH_BUFFER_BIT);
-    glEnable(GL_PROJECTION);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
+    glClear(GL_COLOR_BUFFER_BIT);
+    glPushMatrix();
     glRotatef ((GLfloat) spinx, 1.0, 0.0, 0.0);
     glTranslatef(0.0, 0.0, -sdepth);
     glRotatef ((GLfloat) spinz, 0.0, 0.0, 1.0);
+    lookX = ball.pos.x*scale_ratio;
+    lookY = (ball.pos.y - 5)*scale_ratio;
+    lookZ = 20.0*scale_ratio;
+    gluLookAt(lookX, lookY, lookZ, ball.pos.x*scale_ratio, ball.pos.y*scale_ratio, 0.0, 0, 1, 0);
 
-    //glColor3f(1.0, 1.0, 1.0);
-    glOrtho(0.0 - Lextent, Lfield*scale_ratio + Lextent, 0.0-Wextent, Wfield*scale_ratio + Wextent, -100.0, 100.0); 
     drawfield();
     for (i=0; i<11; i++)
     {
-        //printf("x:%f, y:%f, z:%f ;", players1[i].pos.x,players1[i].pos.y,players1[i].pos.z); 
-
         drawplayer(players1[i]);
         drawplayer(players2[i]);
         printf("player[%d], ac_type: %d, frame: %d\n", i, players1[i].action.ac_type, players1[i].action.frame);
@@ -314,7 +333,7 @@ void display()
     }
     printf("\n");
     drawball(ball);
-
+    glPopMatrix();
     glFlush();
     glutSwapBuffers();
 }
@@ -346,8 +365,9 @@ void mouse(int button, int state, int x, int y)
         case GLUT_LEFT_BUTTON:
             switch (state) {
                 case GLUT_DOWN:
-                    spinx = (spinx + 5) % 360; 
-                    glutPostRedisplay();
+                    beginX = (float)x;
+                    beginY = (float)0;
+                    beginM = (float)0;
                     break;
                 default:
                     break;
@@ -356,8 +376,11 @@ void mouse(int button, int state, int x, int y)
         case GLUT_MIDDLE_BUTTON:
             switch (state) {
                 case GLUT_DOWN:
-                    sdepth += 0.1; 
-                    glutPostRedisplay();
+                    beginM = (float)y;
+                    beginX = (float)0;
+                    beginY = (float)0;
+                    //sdepth -= 4.0; 
+                    //glutPostRedisplay();
                     break;
                 default:
                     break;
@@ -366,8 +389,9 @@ void mouse(int button, int state, int x, int y)
         case GLUT_RIGHT_BUTTON:
             switch (state) {
                 case GLUT_UP:
-                    spinz = (spinz + 5) % 360; 
-                    glutPostRedisplay();
+                    beginY = (float)y;
+                    beginX = (float)0;
+                    beginM = (float)0;
                     break;
                 default:
                     break;
@@ -376,6 +400,17 @@ void mouse(int button, int state, int x, int y)
         default:
             break;
     }
+}
+
+void motion(int x, int y)
+{
+    if (beginX != 0)
+        spinx += (float)(x - beginX) / 4.0;
+    if (beginY != 0)
+        spinz += (float)(beginY - y) / 4.0;
+    if (beginM != 0)
+        sdepth -= (float)(beginM - y) / 10.0;
+    glutPostRedisplay();
 }
 
 /*  Main Loop
@@ -391,8 +426,10 @@ int main(int argc, char** argv)
    init();
    glutReshapeFunc (reshape);
    glutMouseFunc(mouse);
+   glutMotionFunc(motion);
    glutKeyboardFunc (keyboard);
    glutTimerFunc (17, playing, 0);
+   glutFullScreen();
    glutMainLoop();
    return 0;
 }

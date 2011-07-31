@@ -25,9 +25,9 @@ static void rbt_keeper_robot(struct Player *pp, struct Match *mat)
             else
                 act_runto(pp, bpos, 2);
         }
-        else if (rbt_ball_flying_to_gate(bdest_pos, t->id))
+        else if (match.ball.pos.x > 60*Meter || match.ball.pos.x < 45*Meter)
         {
-            if (match.ball.pos.x > 60*Meter || match.ball.pos.x < 45*Meter)
+            if (rbt_ball_flying_to_gate(bdest_pos, t->id))
             {
                 dirt = pounce_direction(bpos, bdest_pos, pp->pos);
                 spd = generate_speed(dirt, 5, speed_per_power); 
