@@ -23,14 +23,14 @@ static void rbt_keeper_robot(struct Player *pp, struct Match *mat)
             if (distance(pp->pos, bpos) <= HOLD_DISTANCE)
                 act_keep(pp, pp->direct);
             else
-                act_runto(pp, bpos, 2);
+                act_runto(pp, direct_to_ball(pp), bpos, 6);
         }
         else if (match.ball.pos.x > 60*Meter || match.ball.pos.x < 45*Meter)
         {
             if (rbt_ball_flying_to_gate(bdest_pos, t->id))
             {
                 dirt = pounce_direction(bpos, bdest_pos, pp->pos);
-                spd = generate_speed(dirt, 5, speed_per_power); 
+                spd = generate_speed(dirt, 7, speed_per_power); 
                 dirt = direct_to_ball(pp);
                 act_pounce(pp, dirt, spd);
             }
@@ -47,8 +47,8 @@ static void rbt_keeper_robot(struct Player *pp, struct Match *mat)
         dirt.y = 0.0;
         dirt.z = 0.0;
         act_stay(pp, dirt);
-        dirt.z = 1.0;
-        act_shot(pp, pp->direct, generate_speed(dirt, 15, speed_per_power));
+        dirt.z = 0.5;
+        act_shot(pp, pp->direct, generate_speed(dirt, 20, speed_per_power));
     }
 }
 
@@ -80,7 +80,7 @@ static void rbt_back_robot(struct Player *pp, struct Match *mat)
         }
         else
         {
-            act_runto(pp, topos, 3);
+            act_runto(pp, direct_to_ball(pp), topos, 4);
         }
     }
 
@@ -91,7 +91,7 @@ static void rbt_back_robot(struct Player *pp, struct Match *mat)
             dirt.z = 0.0;
             act_stay(pp, dirt);
             dirt.z = 1.0;
-            act_shot(pp, pp->direct, generate_speed(dirt, 10, speed_per_power));
+            act_shot(pp, pp->direct, generate_speed(dirt, 15, speed_per_power));
     }
 }
 
@@ -128,7 +128,7 @@ static void rbt_middle_robot(struct Player *pp, struct Match *mat)
             act_shovel(pp, dirt, spd); 
         }
         else
-            act_runto(pp, topos, 3);
+            act_runto(pp, direct_to_ball(pp), topos, 3);
     }
 
     if (rbt_i_have_ball(pp))
@@ -138,7 +138,7 @@ static void rbt_middle_robot(struct Player *pp, struct Match *mat)
             dirt.z = 0.0;
             act_stay(pp, dirt);
             dirt.z = 1.0;
-            act_shot(pp, pp->direct, generate_speed(dirt, 10, speed_per_power));
+            act_shot(pp, pp->direct, generate_speed(dirt, 13, speed_per_power));
     }
 }
 
@@ -170,17 +170,17 @@ static void rbt_front_robot(struct Player *pp, struct Match *mat)
         }
         else
         {
-            act_runto(pp, topos, 3);
+            act_runto(pp, direct_to_ball(pp), topos, 3);
         }
     }
 
     if (rbt_i_have_ball(pp))
     {
-        if (pp->pos.x <= 32*Meter)
+        if (pp->pos.x <= 36*Meter)
         {
             dirt = pp->direct;
             dirt.z = sqrt(dirt.x*dirt.x + dirt.y*dirt.y);
-            Speed spd = generate_speed(dirt , 10, speed_per_power);
+            Speed spd = generate_speed(dirt , 15, speed_per_power);
             act_shot(pp, dirt, spd);
         }
         else

@@ -2,7 +2,7 @@
 #define ACTION_H_
 #include <math.h>
 
-int act_runto(struct Player *, Position pos, int power);
+int act_runto(struct Player *, Direction, Position pos, int power);
 int act_dribble(struct Player *, Direction, Speed);
 int act_run(struct Player *, Direction, Speed);
 int act_kick(struct Player *, Direction, Speed);

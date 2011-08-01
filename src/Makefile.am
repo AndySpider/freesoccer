@@ -20,8 +20,13 @@ engine_LDFLAGS = -lm
 engine_CFLAGS = -Wall
 
 testGUI_SOURCES = testGUI.c \
+				  global.h \
 				  comm.c \
-				  comm.h
+				  comm.h \
+				  coordinate.h \
+				  coordinate.c \
+				  utilities.h \
+				  utilities.c
 
-testGUI_LDFLAGS = -lglut -lGLU
+testGUI_LDFLAGS = -lglut -lGLU -lm
 

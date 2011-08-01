@@ -2,10 +2,13 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <stdio.h>
-#include "stdlib.h"
+#include <math.h>
+#include <stdlib.h>
 #include "global.h"
+#include "actions.h"
 #include "coordinate.h"
 #include "comm.h"
+#include "utilities.h"
 
 struct Ball ball;
 struct Player players1[11];
@@ -82,19 +85,29 @@ void drawball(struct Ball b)
     y = b.pos.y*scale_ratio;
     z = b.pos.z*scale_ratio;
     glPointSize(5.0);
-    glColor3f(1.0, 0, 0);
-    glBegin(GL_POINTS);
-    glVertex3f(x, y, z);
-    glEnd();
+    glColor3f(1.0, 1.0, 1.0);
+    glPushMatrix();
+    glTranslatef(x, y, z);
+    glutSolidSphere(0.3*scale_ratio, 9, 9);
+    glPopMatrix();
 }
 
 void drawplayer(struct Player p)
 {
-    GLfloat x, y, z;
+    GLUquadricObj *quadObj = gluNewQuadric();
+    GLfloat x, y, z, angle;
     x = p.pos.x*scale_ratio;
     y = p.pos.y*scale_ratio;
     z = p.pos.z*scale_ratio;
-    glPointSize(9);
+
+    GLfloat radio = 0.4*scale_ratio, height = 1.8*scale_ratio;
+
+    Direction dirt;
+    Direction normd = normalizing(p.direct);
+    dirt.x = radio * normd.x;
+    dirt.y = radio * normd.y;
+    dirt.z = height;
+
     if (p.id == holder)
         glColor3f(1.0, 1.0, 0.0);
     else if (p.id == focuser)
@@ -103,12 +116,43 @@ void drawplayer(struct Player p)
         glColor3f(0.0, 0.0, 1.0);
     else
         glColor3f(0.0, 1.0, 0.0);
-    glBegin(GL_POINTS);
-    glVertex3f(x, y, z);
+    glPushMatrix();
+    glTranslatef(x, y, z);
+    if (p.action.ac_type == TY_TUMBLE)
+        glRotatef(90.0, normd.x, normd.y, normd.z);
+    if (p.action.ac_type == TY_POUNCE)
+    {
+        if (p.spd.y > 0)
+            glRotatef(-90.0, 1.0, 0.0, 0.0);
+        else if(p.spd.y < 0)
+            glRotatef(90.0, 1.0, 0.0, 0.0);
+    }
+
+    gluQuadricDrawStyle(quadObj, GLU_FILL);
+    gluQuadricNormals(quadObj, GL_FLAT);
+    gluQuadricOrientation(quadObj, GLU_INSIDE);
+    gluCylinder(quadObj, radio, radio, height, 15, 15);
+
+    glBegin(GL_POLYGON);
+    for (angle=0.0; angle<2*3.14; angle+=0.1)
+    {
+        x = radio*sin(angle);
+        y = radio*cos(angle);
+        glVertex3f(x, y, height);
+    }
     glEnd();
+    // Indicate direction
+    glPointSize(5);
+    glColor3f(1.0, 0.0, 0.1);
+    glBegin(GL_POINTS);
+    glVertex3f(dirt.x, dirt.y, dirt.z);
+    glEnd();
+    glPopMatrix();
+    gluDeleteQuadric(quadObj);
 }
 void drawfield(void)
 {
+    float x, y, angle;
     glColor3f(1, 1, 1);
     glLineWidth(3.0);
     glColor3f(0.1, 0.2, 0.1);
@@ -135,6 +179,16 @@ void drawfield(void)
     glVertex3f(Lfield*scale_ratio, Wfield*scale_ratio, 10.0);
     glVertex2f(0.0, Wfield*scale_ratio);
     glVertex3f(0.0, Wfield*scale_ratio, 10.0);
+    glEnd();
+    // center circle
+    glLineWidth(2.0);
+    glBegin(GL_LINE_LOOP);
+    for (angle=0.0; angle<2*3.14; angle+=0.01)
+    {
+        x = Rcircle * sin(angle);
+        y = Rcircle * cos(angle);
+        glVertex2f((x+Lfield/2.0)*scale_ratio, (y+Wfield/2.0)*scale_ratio);
+    }
     glEnd();
     // gate_field_1
     glColor3f(1.0, 1.0, 1.0);
@@ -182,7 +236,7 @@ void drawfield(void)
     glEnd();
     // 2 gates
     glLineWidth(4.0);
-    glColor3f(0.0, 1.0, 0.0);
+    glColor3f(1.0, 1.0, 1.0);
     glBegin(GL_LINE_LOOP);
     glVertex3f(0.0, (Wfield*scale_ratio - Wgate*scale_ratio)/2.0, 0.0);
     glVertex3f(0.0, (Wfield*scale_ratio + Wgate*scale_ratio)/2.0, 0.0);
@@ -227,6 +281,11 @@ void init(void)
     
     strcpy(c.name, "NONE");
     glClearColor(0.0, 0.0, 0.0, 0.0);
+    //GLfloat light_position[] = {Lfield*scale_ratio/2.0, Wfield*scale_ratio/2.0, 20.0*scale_ratio};
+    //glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+    //glEnable(GL_LIGHTING);
+    //glEnable(GL_LIGHT0);
+    //glShadeModel(GL_SMOOTH);
 }
 
 void reshape(int w, int h)
@@ -401,9 +460,9 @@ void mouse(int button, int state, int x, int y)
 void motion(int x, int y)
 {
     if (beginX != 0)
-        spinx += (float)(x - beginX) / 4.0;
+        spinx += (float)(x - beginX) / 50.0;
     if (beginY != 0)
-        spinz += (float)(beginY - y) / 4.0;
+        spinz += (float)(beginY - y) / 50.0;
     if (beginM != 0)
         sdepth -= (float)(beginM - y) / 10.0;
     glutPostRedisplay();

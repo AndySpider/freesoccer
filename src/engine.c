@@ -371,28 +371,28 @@ static int players_act(void)
     for (i=0; i<11; i++)
     {
         if (match.team1.players[i].spd.z > 0.0) 
-            match.team1.players[i].spd.z -= (9.8*Meter/match.nTick);
+            match.team1.players[i].spd.z -= (9.8*Meter/(match.nTick*match.nTick));
 
         if (match.team2.players[i].spd.z > 0.0) 
-            match.team2.players[i].spd.z -= (9.8*Meter/match.nTick);
+            match.team2.players[i].spd.z -= (9.8*Meter/(match.nTick*match.nTick));
 
         match.team1.players[i].pos.x += match.team1.players[i].spd.x;
-        match.team1.players[i].spd.x = 0.0;
+        //match.team1.players[i].spd.x = 0.0;
         match.team1.players[i].pos.y += match.team1.players[i].spd.y;
-        match.team1.players[i].spd.y = 0.0;
+        //match.team1.players[i].spd.y = 0.0;
         match.team1.players[i].pos.z += match.team1.players[i].spd.z;
         if (match.team1.players[i].pos.z < 0.0)
             match.team1.players[i].pos.z = 0.0;
-        match.team1.players[i].spd.z = 0.0;
+        //match.team1.players[i].spd.z = 0.0;
 
         match.team2.players[i].pos.x += match.team2.players[i].spd.x;
-        match.team2.players[i].spd.x = 0.0;
+        ///match.team2.players[i].spd.x = 0.0;
         match.team2.players[i].pos.y += match.team2.players[i].spd.y;
-        match.team2.players[i].spd.y = 0.0;
+        //match.team2.players[i].spd.y = 0.0;
         match.team2.players[i].pos.z += match.team2.players[i].spd.z;
         if (match.team2.players[i].pos.z < 0.0)
             match.team2.players[i].pos.z = 0.0;
-        match.team2.players[i].spd.z = 0.0;
+        //match.team2.players[i].spd.z = 0.0;
     }
     return 0;
 }
@@ -478,7 +478,7 @@ static void move_to_ball(struct Player *pp, int power)
     if (dis <= HOLD_DISTANCE)
         act_short_pass(pp);
     else
-        act_runto(focuser, match.ball.pos, power);
+        act_runto(pp, direct_to_ball(pp), match.ball.pos, power);
 }
 
 static void long_pass(struct Player *pp, int power)
@@ -488,7 +488,7 @@ static void long_pass(struct Player *pp, int power)
     Speed spd;
     spd = generate_speed(dirt, power, ((1.0/105.0)*Lfield/match.nTick));
     if (act_kick(pp, pp->direct, spd) == -1)
-        act_runto(pp, match.ball.pos, 10);
+        act_runto(pp, direct_to_ball(pp), match.ball.pos, 10);
 
 }
 
@@ -568,7 +568,7 @@ static int action_on_cmd(struct Cmd command)
             Direction dirt = {Lfield - 2*Meter - focuser->pos.x, Wfield/2.0 - focuser->pos.y, 0.0};
             dirt.z = sqrt(dirt.x*dirt.x + dirt.y*dirt.y)/2.0;
             if (act_shot(focuser, dirt, generate_speed(dirt, command.power, speed_per_power)) == -1)
-                act_runto(focuser, match.ball.pos, 10);
+                act_runto(focuser, direct_to_ball(focuser), match.ball.pos, 10);
         }
         else
         {
