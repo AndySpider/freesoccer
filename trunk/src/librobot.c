@@ -562,7 +562,7 @@ void stay_in_defence(struct Player *pp)
     Position defend_pos = get_player_pos(my_defend_area, bpos, tid, match.first_half);
     dirt = direct_to_ball(pp);
     if (distance(pp->pos, defend_pos) > HOLD_DISTANCE)
-        act_runto(pp, defend_pos, 2);
+        act_runto(pp, dirt, defend_pos, 2);
     else
         act_stay(pp, dirt);
 }

@@ -354,7 +354,7 @@ int act_hold(struct Player *pp, Direction dirt)
 
     int re = 0;
     if (dis > HOLD_DISTANCE && dis < 4.0*HOLD_DISTANCE)
-        return act_runto(pp, match.ball.pos, 10);
+        return act_runto(pp, direct_to_ball(pp), match.ball.pos, 10);
     else if (dis <= HOLD_DISTANCE)
         do_action(pp, action);
     else
@@ -453,14 +453,14 @@ int act_shot(struct Player *pp, Direction dirt, Speed spd)
     return act_kick(pp, dirt, spd);
 }
 
-int act_runto(struct Player *pp, Position pos, int power)
+int act_runto(struct Player *pp, Direction dir, Position pos, int power)
 {
-    Direction dir;
+    Direction d;
     Speed spd;
-    dir.x = pos.x - pp->pos.x;
-    dir.y = pos.y - pp->pos.y;
-    dir.z = pos.z - pp->pos.z;
-    spd = generate_speed(dir, power, speed_per_power); 
+    d.x = pos.x - pp->pos.x;
+    d.y = pos.y - pp->pos.y;
+    d.z = pos.z - pp->pos.z;
+    spd = generate_speed(d, power, speed_per_power); 
     return act_run(pp, dir, spd);
 }
 

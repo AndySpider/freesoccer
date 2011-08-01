@@ -53,7 +53,8 @@ engine_OBJECTS = $(am_engine_OBJECTS)
 engine_LDADD = $(LDADD)
 engine_LINK = $(CCLD) $(engine_CFLAGS) $(CFLAGS) $(engine_LDFLAGS) \
 	$(LDFLAGS) -o $@
-am_testGUI_OBJECTS = testGUI.$(OBJEXT) comm.$(OBJEXT)
+am_testGUI_OBJECTS = testGUI.$(OBJEXT) comm.$(OBJEXT) \
+	coordinate.$(OBJEXT) utilities.$(OBJEXT)
 testGUI_OBJECTS = $(am_testGUI_OBJECTS)
 testGUI_LDADD = $(LDADD)
 testGUI_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(testGUI_LDFLAGS) \
@@ -177,10 +178,15 @@ engine_SOURCES = \
 engine_LDFLAGS = -lm
 engine_CFLAGS = -Wall
 testGUI_SOURCES = testGUI.c \
+				  global.h \
 				  comm.c \
-				  comm.h
+				  comm.h \
+				  coordinate.h \
+				  coordinate.c \
+				  utilities.h \
+				  utilities.c
 
-testGUI_LDFLAGS = -lglut -lGLU
+testGUI_LDFLAGS = -lglut -lGLU -lm
 all: all-am
 
 .SUFFIXES:
@@ -266,6 +272,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/comm.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/coordinate.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/engine-actions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/engine-comm.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/engine-coordinate.Po@am__quote@
@@ -274,6 +281,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/engine-robot.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/engine-utilities.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/testGUI.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/utilities.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
