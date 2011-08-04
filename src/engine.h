@@ -5,6 +5,7 @@
 #include <stdlib.h>
 
 #define speed_per_power ((1.0/105.0)*Lfield/match.nTick)
+#define dirspd_per_power (PI/180.0/match.nTick)
 
 struct Match match;
 extern float timer;
@@ -18,6 +19,7 @@ struct Exchange {
 
 struct Player *id2player(int);
 int diff_team(struct Player, struct Player);
+void change_ball_speed(Speed, struct Vector, float);
+Angle direct_to_ball(struct Player *);
 
-void set_ball_spd(struct Ball *, Speed);
 #endif //ENGINE_H_

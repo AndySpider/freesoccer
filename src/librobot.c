@@ -10,20 +10,19 @@ Scope volley_area[22];
 
 struct Player *find_to_passer(struct Player *pp)
 {
-    Direction dirt, pdir = pp->direct;
-    float ang, min_ang = 10.0;
-    int i, id;
+    struct Vector vec;
+    Angle ang, min_ang = 10.0;   // 10.0 > 2*PI
+    int i, id = -1;
     struct Team *t = rbt_my_team(pp);
-    float dis;
+    float dis = 0.0;
     if (t->id == 1)
     {
         for (i=0; i<11; i++)
         {
-           dirt.x = match.team1.players[i].pos.x - pp->pos.x;
-           dirt.y = match.team1.players[i].pos.y - pp->pos.y;
-           dirt.z = match.team1.players[i].pos.z - pp->pos.z;
+           vec.x = match.team1.players[i].pos.x - pp->pos.x;
+           vec.y = match.team1.players[i].pos.y - pp->pos.y;
 
-           ang = angle(dirt, pdir);
+           ang = vector2direct(vec);
            if (ang == -1)        // pp himself
                continue;
            else if (ang < min_ang)
@@ -40,11 +39,10 @@ struct Player *find_to_passer(struct Player *pp)
     {
         for (i=0; i<11; i++)
         {
-           dirt.x = match.team2.players[i].pos.x - pp->pos.x;
-           dirt.y = match.team2.players[i].pos.y - pp->pos.y;
-           dirt.z = match.team2.players[i].pos.z - pp->pos.z;
+           vec.x = match.team2.players[i].pos.x - pp->pos.x;
+           vec.y = match.team2.players[i].pos.y - pp->pos.y;
 
-           ang = angle(dirt, pdir);
+           ang = vector2direct(vec);
            if (ang == -1)
                continue;
            else if (ang < min_ang)
@@ -280,6 +278,7 @@ Tactics rbt_team_tactics(struct Player *pp)
     return t->tact;
 }
 
+/*
 float rbt_direct_difficulty(struct Player *pp, Direction dir)
 {
     struct Team *my_t, *oth_t;
@@ -304,7 +303,7 @@ float rbt_direct_difficulty(struct Player *pp, Direction dir)
     return dif;
 }
 
-float rbt_rbt_pass_factor(struct Player *pp)
+float rbt_pass_factor(struct Player *pp)
 {
     Direction up = {0, 1, 0}, down = {0, -1, 0}, left = {-1, 0, 0}, right = {0, 1, 0};
 
@@ -317,6 +316,7 @@ float rbt_rbt_pass_factor(struct Player *pp)
     pf = 2*dif_up + dif_left + dif_right + 0.5*dif_down;
     return pf;
 }
+*/
 
 Position rbt_judge_ball_dest(struct Player *pp)
 {
@@ -540,17 +540,6 @@ static Position get_player_pos(Scope which_area, Position bpos, int tid, int fir
     return defend_pos;
 }
 
-Direction direct_to_ball(struct Player *pp)
-{
-    Position bpos = rbt_where_ball();
-    Direction dirt;
-    dirt.x = bpos.x - pp->pos.x;
-    dirt.y = bpos.y - pp->pos.y;
-    dirt.z = bpos.z - pp->pos.z;
-
-    return dirt;
-}
-
 void stay_in_defence(struct Player *pp)
 {
     Position bpos;
@@ -562,18 +551,32 @@ void stay_in_defence(struct Player *pp)
     Position defend_pos = get_player_pos(my_defend_area, bpos, tid, match.first_half);
     dirt = direct_to_ball(pp);
     if (distance(pp->pos, defend_pos) > HOLD_DISTANCE)
-        act_runto(pp, dirt, defend_pos, 2);
+        act_runto(pp, dirt, defend_pos, 180, 2);
     else
-        act_stay(pp, dirt);
+        act_stay(pp, 0.0);
 }
 
 
-Direction pounce_direction(Position bpos, Position bdest_pos, Position keeper_pos)
+struct Vector pounce_vector(Position bpos, Position bdest_pos, Position keeper_pos)
 {
     Position p;
     p = intersection(bpos, bdest_pos, keeper_pos);
 
-    Direction dirt = {p.x - keeper_pos.x, p.y - keeper_pos.y, p.z - keeper_pos.z};
-    return dirt;
+    struct Vector vec = {(p.x - keeper_pos.x)*INFINITE, (p.y - keeper_pos.y)*INFINITE, (p.z - keeper_pos.z)*INFINITE};
+    return vec;
 }
 
+int i_own_ball(struct Player *pp)
+{
+    float dis = distance(pp->pos, match.ball.pos);
+    if (dis <= HOLD_DISTANCE)
+        return 1;
+    else if (match.ball.last_toucher == NULL)
+        return 0;
+    else if (dis <= 2.5*Meter 
+            && match.ball.last_toucher->id == pp->id
+            && pp->action.ac_type != TY_KICK)
+        return 1;
+    else
+        return 0;
+}

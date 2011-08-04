@@ -3,6 +3,7 @@
 #include <math.h>
 
 #define PI 3.14
+#define INFINITE 10000.0
 
 #define Lfield 105.0
 #define Wfield 68.0
@@ -17,6 +18,7 @@
 #define Meter Lfield/105.0
 
 #define HOLD_DISTANCE 1*Meter
+#define HOLD_DEGREE (5*PI/180)
 #define COLLISION_DISTANCE 0.1*Meter
 //#define OWN_DISTANCE 5*Meter
 

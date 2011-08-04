@@ -1,5 +1,5 @@
 AC_PREREQ([2.67])
-AC_INIT([freesoccer], [0.0.1], http://code.google.com/p/freesoccer/)
+AC_INIT([freesoccer], [0.0.2], http://code.google.com/p/freesoccer/)
 AM_INIT_AUTOMAKE(AC_PACKAGE_NAME, AC_PACKAGE_VERSION, [dist-bzip2])
 AC_CONFIG_HEADERS([config.h])
 

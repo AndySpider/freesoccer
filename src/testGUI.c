@@ -34,11 +34,9 @@ int scale_ratio = 5;
 float Lextent = 20.0;
 float Wextent = 20.0;
 
-GLuint spinx = 0.0;
 GLfloat sdepth = 0.0;
 GLuint spinz = 0.0;
-GLfloat beginX = 0.0;
-GLfloat beginY = 0.0;
+GLfloat beginZ = 0.0;
 GLfloat beginM = 0.0;
 GLfloat lookX;
 GLfloat lookY;
@@ -88,7 +86,7 @@ void drawball(struct Ball b)
     glColor3f(1.0, 1.0, 1.0);
     glPushMatrix();
     glTranslatef(x, y, z);
-    glutSolidSphere(0.3*scale_ratio, 9, 9);
+    glutSolidSphere(0.3*scale_ratio, 15, 15);
     glPopMatrix();
 }
 
@@ -102,12 +100,6 @@ void drawplayer(struct Player p)
 
     GLfloat radio = 0.4*scale_ratio, height = 1.8*scale_ratio;
 
-    Direction dirt;
-    Direction normd = normalizing(p.direct);
-    dirt.x = radio * normd.x;
-    dirt.y = radio * normd.y;
-    dirt.z = height;
-
     if (p.id == holder)
         glColor3f(1.0, 1.0, 0.0);
     else if (p.id == focuser)
@@ -118,19 +110,22 @@ void drawplayer(struct Player p)
         glColor3f(0.0, 1.0, 0.0);
     glPushMatrix();
     glTranslatef(x, y, z);
-    if (p.action.ac_type == TY_TUMBLE)
-        glRotatef(90.0, normd.x, normd.y, normd.z);
+
+    if (p.action.ac_type == TY_TUMBLE) 
+    {
+        glRotatef(p.direct*180/PI, 0, 0, 1.0);
+        glRotatef(10.0*(FR_TUMBLE - p.action.frame), 0, 1, 0);
+    }
     if (p.action.ac_type == TY_POUNCE)
     {
-        if (p.spd.y > 0)
-            glRotatef(-90.0, 1.0, 0.0, 0.0);
-        else if(p.spd.y < 0)
-            glRotatef(90.0, 1.0, 0.0, 0.0);
+        if (p.action.spd.y > 0)
+            glRotatef(-10.0*(FR_POUNCE - p.action.frame), 1.0, 0.0, 0.0);
+        else if(p.action.spd.y < 0)
+            glRotatef(10.0*(FR_POUNCE - p.action.frame), 1.0, 0.0, 0.0);
     }
-
-    gluQuadricDrawStyle(quadObj, GLU_FILL);
-    gluQuadricNormals(quadObj, GL_FLAT);
-    gluQuadricOrientation(quadObj, GLU_INSIDE);
+    //gluQuadricDrawStyle(quadObj, GLU_FILL);
+    //gluQuadricNormals(quadObj, GL_FLAT);
+    //gluQuadricOrientation(quadObj, GLU_INSIDE);
     gluCylinder(quadObj, radio, radio, height, 15, 15);
 
     glBegin(GL_POLYGON);
@@ -144,9 +139,11 @@ void drawplayer(struct Player p)
     // Indicate direction
     glPointSize(5);
     glColor3f(1.0, 0.0, 0.1);
+    glRotatef(p.direct*180/PI, 0.0, 0.0, 1.0);
     glBegin(GL_POINTS);
-    glVertex3f(dirt.x, dirt.y, dirt.z);
+    glVertex3f(radio, 0.0, height);
     glEnd();
+
     glPopMatrix();
     gluDeleteQuadric(quadObj);
 }
@@ -345,11 +342,16 @@ void keyboard(unsigned char key, int x, int y)
             break;
         case 'r':
             strcpy(c.name, "RESTART");
-            spinx = 0.0;
             spinz = 0.0;
-
             break;
+        default:
+            strcpy(c.name, "NONE");
     }
+}
+
+void keyup(unsigned char key, int x, int y)
+{
+    strcpy(c.name, "NONE");
 }
 
 void set_positions(struct Status *sts)
@@ -370,13 +372,12 @@ void display()
     int i;
     glClear(GL_COLOR_BUFFER_BIT);
     glPushMatrix();
-    glRotatef ((GLfloat) spinx, 1.0, 0.0, 0.0);
-    glTranslatef(0.0, 0.0, -sdepth);
+    glTranslatef(0.0, 0.0, - sdepth);
     glRotatef ((GLfloat) spinz, 0.0, 0.0, 1.0);
     lookX = ball.pos.x*scale_ratio;
-    lookY = (ball.pos.y - 15)*scale_ratio;
-    lookZ = (25.0)*scale_ratio;
-    gluLookAt(lookX, lookY, lookZ, ball.pos.x*scale_ratio, ball.pos.y*scale_ratio, 0.0, 0, 1, 0);
+    lookY = (ball.pos.y-15)*scale_ratio;
+    lookZ = (30.0)*scale_ratio;
+    gluLookAt(lookX, lookY, lookZ, ball.pos.x*scale_ratio, ball.pos.y*scale_ratio, 0.0, 0.0, 1.0, 0.5);
 
     drawfield();
     for (i=0; i<11; i++)
@@ -389,7 +390,6 @@ void display()
     printf("\n");
     drawball(ball);
     glPopMatrix();
-    glFlush();
     glutSwapBuffers();
 }
 
@@ -408,7 +408,7 @@ void playing(int val)
             strcpy(c.name, "START");
             sendto(sockfd, &c, sizeof(c), 0, (struct sockaddr *)&sa, sa_len);
         }
-        strcpy(c.name, "NONE");
+        //strcpy(c.name, "NONE");
         display();
         glutTimerFunc (22, playing, 0);
     }
@@ -420,8 +420,7 @@ void mouse(int button, int state, int x, int y)
         case GLUT_LEFT_BUTTON:
             switch (state) {
                 case GLUT_DOWN:
-                    beginX = (float)x;
-                    beginY = (float)0;
+                    beginZ = (float)x;
                     beginM = (float)0;
                     break;
                 default:
@@ -432,8 +431,7 @@ void mouse(int button, int state, int x, int y)
             switch (state) {
                 case GLUT_DOWN:
                     beginM = (float)y;
-                    beginX = (float)0;
-                    beginY = (float)0;
+                    beginZ = (float)0;
                     //sdepth -= 4.0; 
                     //glutPostRedisplay();
                     break;
@@ -444,8 +442,7 @@ void mouse(int button, int state, int x, int y)
         case GLUT_RIGHT_BUTTON:
             switch (state) {
                 case GLUT_UP:
-                    beginY = (float)y;
-                    beginX = (float)0;
+                    beginZ = (float)0;
                     beginM = (float)0;
                     break;
                 default:
@@ -459,10 +456,8 @@ void mouse(int button, int state, int x, int y)
 
 void motion(int x, int y)
 {
-    if (beginX != 0)
-        spinx += (float)(x - beginX) / 50.0;
-    if (beginY != 0)
-        spinz += (float)(beginY - y) / 50.0;
+    if (beginZ != 0)
+        spinz += (float)(beginZ - y) / 50.0;
     if (beginM != 0)
         sdepth -= (float)(beginM - y) / 10.0;
     glutPostRedisplay();
@@ -483,6 +478,7 @@ int main(int argc, char** argv)
    glutMouseFunc(mouse);
    glutMotionFunc(motion);
    glutKeyboardFunc (keyboard);
+   glutKeyboardUpFunc (keyup);
    glutTimerFunc (17, playing, 0);
    glutFullScreen();
    glutMainLoop();

@@ -7,14 +7,18 @@ struct Vector {
     float z;
 };
 
-typedef struct Vector Direction;
 typedef struct Vector Position;
 typedef struct Vector Speed;
 
+typedef float Angle;
+typedef Angle Direction;
+typedef Angle Dirspeed;
+
 typedef struct {
     int ac_type;
-    Direction direct;
+    Dirspeed dspd;
     Speed spd;
+    Speed ball_spd;
     int frame;
 } Action;
 
@@ -53,7 +57,6 @@ struct Player {
     int id;
     Position pos;
     Direction direct;
-    Speed spd;
     Action action;
     struct Information info;
     struct Attributes attr;

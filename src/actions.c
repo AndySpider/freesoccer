@@ -6,17 +6,21 @@
 #include "librobot.h"
 
 #define ACTION_TYPE(a) (a.ac_type)
-#define ACTION_DIRT(a) (a.direct)
+#define ACTION_DSPEED(a) (a.dspd)
 #define ACTION_SPEED(a) (a.spd)
-#define ACTION_POWER(a) (generate_power(a.spd, speed_per_power))
+#define ACTION_BALLSPEED(a) (a.ball_spd)
+#define ACTION_PPOWER(a) (generate_ppower(a.spd, speed_per_power))
+#define ACTION_DPOWER(a) (generate_dpower(a.dirspd, dirspd_per_power))
 #define ACTION_FRAME(a) (a.frame)
+Speed arbi_bspd = {-999, -999, -999};
 
-static Action generate_action(int ac_type, Direction dirt, Speed spd, int new_frame)
+static Action generate_action(int ac_type, Dirspeed dspd, Speed spd, Speed bspd, int new_frame)
 {
     Action ac;
     ac.ac_type = ac_type;
-    ac.direct = dirt;
+    ac.dspd = dspd;
     ac.spd = spd;
+    ac.ball_spd = bspd;
     ac.frame = new_frame;
     return ac;
 }
@@ -24,24 +28,37 @@ static Action generate_action(int ac_type, Direction dirt, Speed spd, int new_fr
 static int equal_action(Action ac1, Action ac2)
 {
     if (ACTION_TYPE(ac1) == ACTION_TYPE(ac2) 
-            && equal_vector(ACTION_DIRT(ac1), ACTION_DIRT(ac2))
-            && equal_vector(ACTION_SPEED(ac1), ACTION_SPEED(ac2)))
+            && equal_vector(ACTION_SPEED(ac1), ACTION_SPEED(ac2))
+            && ACTION_DSPEED(ac1) == ACTION_DSPEED(ac2))
         return 1;
     else
         return 0;
 }
 
-static void adjust_ball_pos(struct Player *pp, Direction dirt)
+static int adjust_ball_pos(struct Player *pp, Direction dirt)
 {
-    Direction d;
-    d = normalizing(dirt);
-    d.x *= 1.0/(HOLD_DISTANCE *2.0);
-    d.y *= 1.0/(HOLD_DISTANCE *2.0);
-    d.z *= 1.0/(HOLD_DISTANCE *2.0);
+    if (distance(pp->pos, match.ball.pos) > HOLD_DISTANCE)
+        return IMPOSSIBLE;
 
-    match.ball.pos.x = pp->pos.x + d.x;
-    match.ball.pos.y = pp->pos.y + d.y;
-    match.ball.pos.z = pp->pos.z + d.z;
+    if (fabsf(direct_diff(direct_to_ball(pp), dirt)) <= 5*PI/180)
+        return DONE;
+
+    struct Vector d, dballto;
+    Position pballto;
+    d = direct2vector(dirt, 0.7*HOLD_DISTANCE);
+
+    pballto.x = pp->pos.x + d.x;
+    pballto.y = pp->pos.y + d.y;
+    pballto.z = pp->pos.z + d.z;
+
+    dballto.x = pballto.x - match.ball.pos.x;
+    dballto.y = pballto.y - match.ball.pos.y;
+    dballto.z = pballto.z - match.ball.pos.z;
+
+    Speed spd = generate_speed(dballto, 5, speed_per_power);
+    change_ball_speed(spd, (struct Vector)spd, 0.0);
+
+    return UNFINISHED;
 }
 
 static Action previous_action(struct Player *pp)
@@ -159,78 +176,53 @@ static void set_frame(struct Player *pp, int frame)
     pp->action.frame = frame;
 }
 
-static void perform_action(struct Player *pp, Action ac)
+static void complete_action(struct Player *pp)
 {
-    Speed spd;
-    Direction dirt;
     Speed still = {0.0, 0.0, 0.0};
     float dis;
-    int frame = ACTION_FRAME(ac);
+    int frame = ACTION_FRAME(pp->action);
+    Speed bspd = ACTION_BALLSPEED(pp->action);
 
-    switch (ACTION_TYPE(ac))
+    switch (ACTION_TYPE(pp->action))
     {
         case TY_RUN:
-            spd = ACTION_SPEED(ac);
-            dirt = ACTION_DIRT(ac);
-            pp->direct = dirt;
-            pp->spd = spd;
             break;
         case TY_KICK:
-            spd = ACTION_SPEED(ac);
-            dirt = ACTION_DIRT(ac);
             if (frame == 5)
             {
                 dis = distance(pp->pos, match.ball.pos);
-                if (dis <= HOLD_DISTANCE)
+                if (dis <= HOLD_DISTANCE) 
                 {
-                    Speed bspd = {spd.x * 1.1, spd.y*1.1, spd.z*1.1};
-                    match.ball.spd = bspd;
+                    change_ball_speed(bspd, (struct Vector)bspd, -0.1);
                     match.ball.kicked = 1;
                     match.ball.last_toucher = pp;
                 }
             }
-            pp->spd = still;
-            pp->direct = dirt;
             break;
         case TY_SHOVEL:
-            spd = ACTION_SPEED(ac);
-            dirt = ACTION_DIRT(ac);
             dis = distance(pp->pos, match.ball.pos);
             if (dis <= HOLD_DISTANCE)
             {
-                Speed bspd = {spd.x * 1.3, spd.y * 1.3, spd.z *1.3};
-                match.ball.spd = bspd;
+                change_ball_speed(bspd, (struct Vector)bspd, -0.1);
                 match.ball.kicked = 1;
                 match.ball.last_toucher = pp;
             }
-            pp->spd = spd;
-            pp->direct = dirt;
             break;
         case TY_STAY:
-            dirt = ACTION_DIRT(ac);
-            pp->spd = still;
-            pp->direct = dirt;
             break;
         case TY_HOLD:
-            pp->spd = still;
-            dirt = ACTION_DIRT(ac);
-            pp->direct = dirt;
             dis = distance(pp->pos, match.ball.pos);
             if (dis <= HOLD_DISTANCE)
             {
-                    adjust_ball_pos(pp, pp->direct);
-                    match.ball.spd = still;
-                    match.ball.last_toucher = pp;
+                change_ball_speed(still, direct2vector(pp->direct, 1), -0.05);
+                match.ball.last_toucher = pp;
             }
             break;
         case TY_KEEP:
-            pp->spd = still;
-            dirt = ACTION_DIRT(ac);
-            pp->direct = dirt;
             dis = distance(pp->pos, match.ball.pos);
             if (dis <= HOLD_DISTANCE)
             {
-                match.ball.spd = still;
+                change_ball_speed(still, direct2vector(pp->direct, 1), -0.05);
                 match.ball.keeped = 1;
                 match.ball.last_toucher = pp;
             }
@@ -239,25 +231,18 @@ static void perform_action(struct Player *pp, Action ac)
             dis = distance(pp->pos, match.ball.pos);
             if (dis <= HOLD_DISTANCE)    // set spd of ball before that of pp!
             {
-                match.ball.spd = pp->spd;
+                change_ball_speed(pp->action.spd, direct2vector(pp->direct, 1), -0.05);
                 match.ball.keeped = 1;
                 match.ball.last_toucher = pp;
             }
-            pp->spd = ACTION_SPEED(ac);
-            pp->direct = ACTION_DIRT(ac);
             break;
         case TY_TUMBLE:
-            pp->spd = ACTION_SPEED(ac);
-            pp->direct = ACTION_DIRT(ac);
             break;
         case TY_DRIBBLE:
-            pp->spd = ACTION_SPEED(ac);
-            pp->direct = ACTION_DIRT(ac);
             dis = distance(pp->pos, match.ball.pos);
             if (dis <= HOLD_DISTANCE)
             {
-                Speed bspd = {pp->spd.x * 1.3, pp->spd.y * 1.3, pp->spd.z *1.3};
-                match.ball.spd = bspd;
+                change_ball_speed(bspd, (struct Vector)bspd, -0.1);
                 match.ball.kicked = 1;
                 match.ball.last_toucher = pp;
             }
@@ -294,14 +279,14 @@ static void do_action(struct Player *pp, Action ac)
     {
         nframe = next_frame(pp, ac, pre_frame);
         set_frame(pp, nframe);
-        perform_action(pp, pre_action);
+        complete_action(pp);
     }
     else if (pre_frame != 0)    // previous action unfinished
     {
         if (action_interruptable(pre_action))
         {
             set_action(pp, ac);
-            perform_action(pp, ac); //pp->spd = spd;
+            complete_action(pp); //pp->spd = spd;
         }
         else
             do_action(pp, pre_action);
@@ -309,99 +294,135 @@ static void do_action(struct Player *pp, Action ac)
     else          // previous action finished, set new action
     {
         set_action(pp, ac);
-        perform_action(pp, ac);
+       complete_action(pp);
     }
 }
 
 /* basic actions with independent frames */
-int act_run(struct Player *pp, Direction dirt, Speed spd)
+int act_run(struct Player *pp, Dirspeed dspd, Speed spd)
 {
     Action action;
-    action = generate_action(TY_RUN, dirt, spd, FR_RUN);
+    action = generate_action(TY_RUN, dspd, spd, arbi_bspd, FR_RUN);
     do_action(pp, action);
-    return 0;
+    return DONE;
 }
 
-int act_kick(struct Player *pp, Direction dirt, Speed spd)
+static int i_keep_ball(struct Player *pp)
 {
-    float dis;
-    dis = distance(pp->pos, match.ball.pos);
-    Action action = generate_action(TY_KICK, dirt, spd, FR_KICK);
+    if (ACTION_TYPE(pp->action) == TY_KEEP 
+            && match.ball.keeped == 1 
+            && match.ball.last_toucher->id == pp->id)
+        return 1;
+    else
+        return 0;
+}
+
+static int i_kick_ball(struct Player *pp)
+{
+    if (ACTION_TYPE(pp->action) == TY_KICK 
+            && match.ball.kicked == 1 
+            && match.ball.last_toucher->id == pp->id)
+        return 1;
+    else
+        return 0;
+}
+
+int act_kick(struct Player *pp, Dirspeed dspd, Speed spd, Speed bspd)
+{
+    if (i_kick_ball(pp))
+        return DONE;
+
+    if (!i_own_ball(pp))
+        return IMPOSSIBLE;
+
+    Action action = generate_action(TY_KICK, dspd, spd, bspd, FR_KICK);
+    if (act_runto(pp, direct_to_ball(pp), match.ball.pos, 180, 8) == DONE)
+        do_action(pp, action);
+
+    return UNFINISHED;
+}
+
+int act_shovel(struct Player *pp, Dirspeed dspd, Speed spd, Speed bspd)
+{
+    if (i_kick_ball(pp))
+        return DONE;
+
+    Action action = generate_action(TY_SHOVEL, dspd, spd, bspd, FR_SHOVEL);
+
+    do_action(pp, action);
+
+    return UNFINISHED;
+}
+
+static int i_hold_ball(struct Player *pp)
+{
+    float dis = distance(pp->pos, match.ball.pos);
+    Speed still = {0.0, 0.0, 0.0};
+    if (ACTION_TYPE(pp->action) == TY_HOLD 
+            && dis <= HOLD_DISTANCE 
+            && equal_vector(match.ball.spd, still))
+        return 1;
+    else
+        return 0;
+}
+
+int act_hold(struct Player *pp, Dirspeed dspd)
+{
+    if (i_hold_ball(pp))
+        return DONE;
+
+    if (!i_own_ball(pp))
+        return IMPOSSIBLE;
+
+    Speed still = {0.0, 0.0, 0.0};
+    Action action = generate_action(TY_HOLD, dspd, still, arbi_bspd, FR_HOLD);
+
+    AC_RESULT re = act_runto(pp, direct_to_ball(pp), match.ball.pos, 180, 8);
+    if ( re == DONE )
+    {
+        adjust_ball_pos(pp, pp->direct + dspd);
+        do_action(pp, action);
+    }
+
+    return UNFINISHED;
+}
+
+int act_stay(struct Player *pp, Dirspeed dspd)
+{
+    Speed still = {0.0, 0.0, 0.0};
+    Action action = generate_action(TY_STAY, dspd, still, arbi_bspd, FR_STAY);
+    do_action(pp, action);
+    return DONE;
+}
+
+int act_pounce(struct Player *pp, Dirspeed dspd, Speed spd)
+{
+    Action action = generate_action(TY_POUNCE, dspd, spd, arbi_bspd, FR_POUNCE);
+    do_action(pp, action);
+    return DONE;
+}
+
+int act_keep(struct Player *pp, Dirspeed dspd)
+{
+    if (i_keep_ball(pp))
+        return DONE;
+
+    Speed still = {0.0, 0.0, 0.0};
+    Action action = generate_action(TY_KEEP, dspd, still, arbi_bspd, FR_KEEP);
+    float dis = distance(pp->pos, match.ball.pos);
 
     if (dis <= HOLD_DISTANCE)
     {
         do_action(pp, action);
-        return 0;
     }
     else
-        return -1;
-}
+        return IMPOSSIBLE;
 
-int act_shovel(struct Player *pp, Direction dirt, Speed spd)
-{
-    float dis;
-    dis = distance(pp->pos, match.ball.pos);
-    Action action = generate_action(TY_SHOVEL, dirt, spd, FR_SHOVEL);
-    do_action(pp, action);
-    return 0;
-}
-
-int act_hold(struct Player *pp, Direction dirt)
-{
-    float dis = distance(pp->pos, match.ball.pos);
-    Speed still = {0.0, 0.0, 0.0};
-    Action action = generate_action(TY_HOLD, dirt, still, FR_HOLD);
-
-    int re = 0;
-    if (dis > HOLD_DISTANCE && dis < 4.0*HOLD_DISTANCE)
-        return act_runto(pp, direct_to_ball(pp), match.ball.pos, 10);
-    else if (dis <= HOLD_DISTANCE)
-        do_action(pp, action);
-    else
-        re = -1;
-    return re;
-}
-
-int act_stay(struct Player *pp, Direction dirt)
-{
-    Speed still = {0.0, 0.0, 0.0};
-    Action action = generate_action(TY_STAY, dirt, still, FR_STAY);
-
-    if (rbt_i_have_ball(pp) && ACTION_TYPE(previous_action(pp)) != TY_KICK)
-        return act_hold(pp, dirt);
-    else
-        do_action(pp, action);
-    return 0;
-}
-
-int act_pounce(struct Player *pp, Direction dirt, Speed spd)
-{
-    Action action = generate_action(TY_POUNCE, dirt, spd, FR_POUNCE);
-    do_action(pp, action);
-    return 0;
-}
-
-int act_keep(struct Player *pp, Direction dirt)
-{
-    Speed still = {0.0, 0.0, 0.0};
-    Action action = generate_action(TY_KEEP, dirt, still, FR_KEEP);
-    float dis = distance(pp->pos, match.ball.pos);
-
-    if (dis <= HOLD_DISTANCE)
-    {
-        do_action(pp, action);
-        return 0;
-    }
-    else
-        return -1;
+    return UNFINISHED;
 }
 
 /*
 int act_turn(struct Player *pp)
-{
-}
-
-int act_tumble(struct Player *pp)
 {
 }
 
@@ -425,69 +446,81 @@ int act_reverse(struct Player *pp)
 
 int act_short_pass(struct Player *pp)
 {
+    struct Vector vec;
+    Speed bspd;
     Direction dir;
-    Speed spd;
-    int power;
+    Dirspeed dspd;
+    int spower, dpower = 180;
     struct Player *topasser;
     topasser = find_to_passer(pp);
     if (topasser == NULL)
     {
-        power = 6;
-        dir = pp->direct;
+        spower = 6;
+        vec = direct2vector(pp->direct, INFINITE);
+        dir = 0.0;
     }
     else
     {
-        float dis = distance(topasser->pos, pp->pos) + 2.0*Meter;
-        power =  2*sqrt(dis);
-        dir.x = topasser->pos.x - pp->pos.x;
-        dir.y = topasser->pos.y - pp->pos.y;
-        dir.z = topasser->pos.z - pp->pos.z;
+        float dis = distance(topasser->pos, pp->pos) + 3.0*Meter;
+        spower =  3*sqrt(dis);
+        vec = vector(pp->pos, topasser->pos);
+        dir = vector2direct(vec);
     }
-    spd = generate_speed(dir, power, speed_per_power);
-    return act_kick(pp, dir, spd);
+    bspd = generate_speed(vec, spower, speed_per_power);
+    dspd = generate_dirspd(dir, dpower, dirspd_per_power);
+    return act_kick(pp, dspd, match.ball.spd, bspd);
 }
 
 
-int act_shot(struct Player *pp, Direction dirt, Speed spd)
+int act_shot(struct Player *pp, Dirspeed dspd, Speed spd, Speed bspd)
 {
-    return act_kick(pp, dirt, spd);
+    return act_kick(pp, dspd, spd, bspd);
 }
 
-int act_runto(struct Player *pp, Direction dir, Position pos, int power)
+int act_runto(struct Player *pp, Direction dir, Position pos, int dpower, int spower)
 {
-    Direction d;
+    if (distance(pp->pos, pos) <= HOLD_DISTANCE )
+        return DONE;
+
+    struct Vector d;
     Speed spd;
     d.x = pos.x - pp->pos.x;
     d.y = pos.y - pp->pos.y;
     d.z = pos.z - pp->pos.z;
-    spd = generate_speed(d, power, speed_per_power); 
-    return act_run(pp, dir, spd);
+    spd = generate_speed(d, spower, speed_per_power); 
+
+    Angle agl;
+    Dirspeed dspd;
+    agl = direct_diff(pp->direct, dir);
+    dspd = generate_dirspd(agl, dpower, dirspd_per_power);
+
+    act_run(pp, dspd, spd);
+    return UNFINISHED;
 }
 
 
-int act_dribble(struct Player *pp, Direction dirt, Speed spd)
+int act_dribble(struct Player *pp, Dirspeed dspd, Speed spd, Speed bspd)
 {
-    float dis = distance(pp->pos, match.ball.pos);
-    Action ac = generate_action(TY_DRIBBLE, dirt, spd, FR_DRIBBLE);
+    Action ac = generate_action(TY_DRIBBLE, dspd, spd, bspd, FR_DRIBBLE);
 
-    if (!rbt_i_have_ball(pp))
-        return -1;
-    else if (angle(dirt, pp->direct) > 5*PI/180)
-        return act_hold(pp, spd);
-    else if (dis <= HOLD_DISTANCE)
+    if (!i_own_ball(pp))
+        return IMPOSSIBLE;
+
+    int spower = generate_spower(spd, speed_per_power);
+    int dpower = generate_dpower(dspd, dirspd_per_power);
+    AC_RESULT re = act_runto(pp, direct_to_ball(pp), match.ball.pos, dpower, spower);
+    if (re == DONE)
     {
+        adjust_ball_pos(pp, pp->direct + dspd);
         do_action(pp, ac);
-        return 0;
     }
-    else
-        return -1;
 
-    return 0;
+    return UNFINISHED;
 }
 
-int act_tumble(struct Player *pp, Speed spd, Direction dirt)
+int act_tumble(struct Player *pp, Dirspeed dspd, Speed spd)
 {
-    Action action = generate_action(TY_TUMBLE, spd, dirt, FR_TUMBLE);
+    Action action = generate_action(TY_TUMBLE, dspd, spd, arbi_bspd, FR_TUMBLE);
     do_action(pp, action);
-    return 0;
+    return DONE;
 }
