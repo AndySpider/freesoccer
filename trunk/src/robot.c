@@ -9,7 +9,9 @@ static void rbt_keeper_robot(struct Player *pp, struct Match *mat)
 {
     struct Team *t;
     Speed spd;
-    Direction dirt;
+    Dirspeed dspd;
+    Angle agl;
+    struct Vector vec;
     t = rbt_my_team(pp);
     Position bpos = rbt_where_ball();
     Position bdest_pos = rbt_judge_ball_dest(pp);
@@ -21,18 +23,23 @@ static void rbt_keeper_robot(struct Player *pp, struct Match *mat)
         if (in_scope(my_volley_area, bpos) && !rbt_ball_flying_to_gate(bdest_pos, t->id))
         {
             if (distance(pp->pos, bpos) <= HOLD_DISTANCE)
-                act_keep(pp, pp->direct);
+            {
+                agl = direct_diff(pp->direct, direct_to_ball(pp)); 
+                dspd = generate_dirspd(agl, 180, dirspd_per_power);
+                act_keep(pp, dspd);
+            }
             else
-                act_runto(pp, direct_to_ball(pp), bpos, 6);
+                act_runto(pp, direct_to_ball(pp), bpos, 180, 6);
         }
         else if (match.ball.pos.x > 60*Meter || match.ball.pos.x < 45*Meter)
         {
             if (rbt_ball_flying_to_gate(bdest_pos, t->id))
             {
-                dirt = pounce_direction(bpos, bdest_pos, pp->pos);
-                spd = generate_speed(dirt, 7, speed_per_power); 
-                dirt = direct_to_ball(pp);
-                act_pounce(pp, dirt, spd);
+                vec = pounce_vector(bpos, bdest_pos, pp->pos);
+                spd = generate_speed(vec, 7, speed_per_power); 
+                agl = direct_diff(pp->direct, direct_to_ball(pp));
+                dspd = generate_dirspd(agl, 180, dirspd_per_power);
+                act_pounce(pp, dspd, spd);
             }
         }
         else
@@ -40,27 +47,32 @@ static void rbt_keeper_robot(struct Player *pp, struct Match *mat)
             stay_in_defence(pp);
         }
     }
+    else
+        stay_in_defence(pp);
 
     if (rbt_i_have_ball(pp))
     {
-        dirt.x = -1.0;
-        dirt.y = 0.0;
-        dirt.z = 0.0;
-        act_stay(pp, dirt);
-        dirt.z = 0.5;
-        act_shot(pp, pp->direct, generate_speed(dirt, 20, speed_per_power));
+        vec.x = -1.0 * INFINITE;
+        vec.y = 0.0;
+        vec.z = 0.0;
+        agl = direct_diff(pp->direct, vector2direct(vec));
+        dspd = generate_dirspd(agl, 180, dirspd_per_power);
+        vec.z = 0.5 * INFINITE;
+        act_shot(pp, dspd, match.ball.spd, generate_speed(vec, 20, speed_per_power));
     }
 }
 
 static void rbt_back_robot(struct Player *pp, struct Match *mat)
 {
     struct Team *t = rbt_my_team(pp);
+    Angle agl;
+    Dirspeed dspd;
     Position bpos = rbt_where_ball();
     Position topos;
     if (holder != NULL)
     {
-        topos.x =  bpos.x + 10*holder->spd.x;
-        topos.y =  bpos.y + 10*holder->spd.y;
+        topos.x =  bpos.x + 10*holder->action.spd.x;
+        topos.y =  bpos.y + 10*holder->action.spd.y;
         topos.z =  0.0;
     }
     else
@@ -69,7 +81,7 @@ static void rbt_back_robot(struct Player *pp, struct Match *mat)
         topos.y = bpos.y + 10*mat->ball.spd.y;
         topos.z = 0.0;
     }
-    Direction dirt = {bpos.x - pp->pos.x, bpos.y - pp->pos.y, bpos.z - pp->pos.z};
+    struct Vector vec = {bpos.x - pp->pos.x, bpos.y - pp->pos.y, bpos.z - pp->pos.z};
     Scope my_volley_area = volley_area[pp->id];
     
     if (which_team_hold_ball() != t->id)
@@ -80,18 +92,26 @@ static void rbt_back_robot(struct Player *pp, struct Match *mat)
         }
         else
         {
-            act_runto(pp, direct_to_ball(pp), topos, 4);
+            act_runto(pp, direct_to_ball(pp), topos, 180, 4);
         }
+    }
+    else
+    {
+        agl = direct_diff(pp->direct, direct_to_ball(pp));
+        dspd = generate_dirspd(agl, 180, dirspd_per_power);
+        act_stay(pp, dspd);
     }
 
     if (rbt_i_have_ball(pp))
     {
-            dirt.x = -1.0;
-            dirt.y = 0.0;
-            dirt.z = 0.0;
-            act_stay(pp, dirt);
-            dirt.z = 1.0;
-            act_shot(pp, pp->direct, generate_speed(dirt, 15, speed_per_power));
+            vec.x = -1.0 * INFINITE;
+            vec.y = 0.0;
+            vec.z = 0.0;
+            agl = direct_diff(pp->direct, vector2direct(vec));
+            dspd = generate_dirspd(agl, 180, dirspd_per_power);
+            act_hold(pp, dspd);
+            vec.z = 1.0 * INFINITE;
+            act_shot(pp, dspd, match.ball.spd, generate_speed(vec, 15, speed_per_power));
     }
 }
 
@@ -99,13 +119,16 @@ static void rbt_middle_robot(struct Player *pp, struct Match *mat)
 {
     struct Team *t = rbt_my_team(pp);
     Position bpos = rbt_where_ball();
-    Direction dirt = direct_to_ball(pp);
+    struct Vector vec = vector(pp->pos, mat->ball.pos);
+    Angle agl = direct_diff(pp->direct, direct_to_ball(pp));
+    Dirspeed dspd;
+    Speed spd;
     float dis = distance(pp->pos, mat->ball.pos);
     Position topos;
     if (holder != NULL)
     {
-        topos.x =  bpos.x + 10*holder->spd.x;
-        topos.y =  bpos.y + 10*holder->spd.y;
+        topos.x =  bpos.x + 10*holder->action.spd.x;
+        topos.y =  bpos.y + 10*holder->action.spd.y;
         topos.z =  0.0;
     }
     else
@@ -124,21 +147,27 @@ static void rbt_middle_robot(struct Player *pp, struct Match *mat)
         }
         else if (dis <= 4*Meter)
         {
-            Speed spd = generate_speed(dirt, 5, speed_per_power);
-            act_shovel(pp, dirt, spd); 
+
+            dspd = generate_dirspd(agl, 180, dirspd_per_power);
+            spd = generate_speed(vec, 5, speed_per_power);
+            act_shovel(pp, dspd, spd, spd); 
         }
         else
-            act_runto(pp, direct_to_ball(pp), topos, 3);
+            act_runto(pp, direct_to_ball(pp), topos, 180, 3);
     }
+    else
+        act_stay(pp, generate_dirspd(agl, 180, dirspd_per_power));
 
     if (rbt_i_have_ball(pp))
     {
-            dirt.x = -1.0;
-            dirt.y = 0.0;
-            dirt.z = 0.0;
-            act_stay(pp, dirt);
-            dirt.z = 1.0;
-            act_shot(pp, pp->direct, generate_speed(dirt, 13, speed_per_power));
+            vec.x = -1.0 * INFINITE;
+            vec.y = 0.0;
+            vec.z = 0.0;
+            agl = direct_diff(pp->direct, vector2direct(vec));
+            dspd = generate_dirspd(agl, 180, dirspd_per_power);
+            act_hold(pp, dspd);
+            vec.z = 1.0 * INFINITE;
+            act_shot(pp, dspd, match.ball.spd, generate_speed(vec, 13, speed_per_power));
     }
 }
 
@@ -147,10 +176,12 @@ static void rbt_front_robot(struct Player *pp, struct Match *mat)
     struct Team *t = rbt_my_team(pp);
     Position bpos = rbt_where_ball();
     Position topos;
+    Angle agl;
+    Dirspeed dspd;
     if (holder != NULL)
     {
-        topos.x =  bpos.x + 10*holder->spd.x;
-        topos.y =  bpos.y + 10*holder->spd.y;
+        topos.x =  bpos.x + 10*holder->action.spd.x;
+        topos.y =  bpos.y + 10*holder->action.spd.y;
         topos.z =  0.0;
     }
     else
@@ -159,7 +190,7 @@ static void rbt_front_robot(struct Player *pp, struct Match *mat)
         topos.y = bpos.y + 10*mat->ball.spd.y;
         topos.z = 0.0;
     }
-    Direction dirt;
+    struct Vector vec;
     Scope my_volley_area = volley_area[pp->id];
     
    if (which_team_hold_ball() != t->id)
@@ -170,26 +201,37 @@ static void rbt_front_robot(struct Player *pp, struct Match *mat)
         }
         else
         {
-            act_runto(pp, direct_to_ball(pp), topos, 3);
+            act_runto(pp, direct_to_ball(pp), topos, 180, 3);
         }
+    }
+    else
+    {
+        agl = direct_diff(pp->direct, direct_to_ball(pp));
+        dspd = generate_dirspd(agl, 180, dirspd_per_power);
+        act_stay(pp, dspd);
     }
 
     if (rbt_i_have_ball(pp))
     {
         if (pp->pos.x <= 36*Meter)
         {
-            dirt = pp->direct;
-            dirt.z = sqrt(dirt.x*dirt.x + dirt.y*dirt.y);
-            Speed spd = generate_speed(dirt , 15, speed_per_power);
-            act_shot(pp, dirt, spd);
+            vec = direct2vector(pp->direct, INFINITE);
+            vec.z = sqrt(vec.x*vec.x + vec.y*vec.y);
+            Speed spd = generate_speed(vec , 15, speed_per_power);
+            agl = direct_diff(pp->direct, vector2direct(vec));
+            dspd = generate_dirspd(agl, 180, dirspd_per_power);
+            act_shot(pp, dspd, match.ball.spd, spd);
         }
         else
         {
-            dirt.x = -1.0;
-            dirt.y = 0.0;
-            dirt.z = 0.0;
-            Speed spd = generate_speed(dirt , 3, speed_per_power);
-            act_dribble(pp, dirt, spd);
+            vec.x = -1.0 * INFINITE;
+            vec.y = 0.0;
+            vec.z = 0.0;
+            agl = direct_diff(pp->direct, vector2direct(vec));
+            dspd = generate_dirspd(agl, 180, dirspd_per_power);
+            Speed spd = generate_speed(vec , 3, speed_per_power);
+            Speed bspd = multiply(spd, 1.2);
+            act_dribble(pp, dspd, spd, bspd);
         }
     }
 

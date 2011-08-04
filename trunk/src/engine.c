@@ -89,7 +89,6 @@ static int find_focuser(void)
 static void init_players_pos(struct Match *mat)
 {
     int i;
-    Direction dirt1, dirt2;
     for (i=0; i< 11; i++)
     {
         if (mat->first_half == 1)
@@ -105,14 +104,8 @@ static void init_players_pos(struct Match *mat)
             mat->team1.players[i].pos.y = formations[mat->team1.form][i].y;
         }
 
-        dirt1.x = mat->ball.pos.x - mat->team1.players[i].pos.x;
-        dirt1.y = mat->ball.pos.y - mat->team1.players[i].pos.y;
-        dirt1.z = mat->ball.pos.z - mat->team1.players[i].pos.z;
-        dirt2.x = mat->ball.pos.x - mat->team2.players[i].pos.x;
-        dirt2.y = mat->ball.pos.y - mat->team2.players[i].pos.y;
-        dirt2.z = mat->ball.pos.z - mat->team2.players[i].pos.z;
-        act_stay(&mat->team1.players[i], dirt1);
-        act_stay(&mat->team2.players[i], dirt2);
+        mat->team1.players[i].direct = direct_to_ball(&mat->team1.players[i]);
+        mat->team2.players[i].direct = direct_to_ball(&mat->team2.players[i]);
     }
 }
 
@@ -364,35 +357,33 @@ struct Player *id2player(int id)
     return NULL;
 }
 
-/* Put players' speeds into action */
+/* Put players' speed, dirspd into action */
 static int players_act(void)
 {
     int i;
     for (i=0; i<11; i++)
     {
-        if (match.team1.players[i].spd.z > 0.0) 
-            match.team1.players[i].spd.z -= (9.8*Meter/(match.nTick*match.nTick));
+        // position
+        if (match.team1.players[i].action.spd.z > 0.0) 
+            match.team1.players[i].action.spd.z -= (9.8*Meter/(match.nTick*match.nTick));
 
-        if (match.team2.players[i].spd.z > 0.0) 
-            match.team2.players[i].spd.z -= (9.8*Meter/(match.nTick*match.nTick));
+        if (match.team2.players[i].action.spd.z > 0.0) 
+            match.team2.players[i].action.spd.z -= (9.8*Meter/(match.nTick*match.nTick));
 
-        match.team1.players[i].pos.x += match.team1.players[i].spd.x;
-        //match.team1.players[i].spd.x = 0.0;
-        match.team1.players[i].pos.y += match.team1.players[i].spd.y;
-        //match.team1.players[i].spd.y = 0.0;
-        match.team1.players[i].pos.z += match.team1.players[i].spd.z;
+        match.team1.players[i].pos = add_vector(match.team1.players[i].pos, match.team1.players[i].action.spd);
         if (match.team1.players[i].pos.z < 0.0)
             match.team1.players[i].pos.z = 0.0;
-        //match.team1.players[i].spd.z = 0.0;
 
-        match.team2.players[i].pos.x += match.team2.players[i].spd.x;
-        ///match.team2.players[i].spd.x = 0.0;
-        match.team2.players[i].pos.y += match.team2.players[i].spd.y;
-        //match.team2.players[i].spd.y = 0.0;
-        match.team2.players[i].pos.z += match.team2.players[i].spd.z;
+        match.team2.players[i].pos = add_vector(match.team2.players[i].pos, match.team2.players[i].action.spd);
         if (match.team2.players[i].pos.z < 0.0)
             match.team2.players[i].pos.z = 0.0;
-        //match.team2.players[i].spd.z = 0.0;
+
+        // direction
+        match.team1.players[i].direct += match.team1.players[i].action.dspd;
+        match.team1.players[i].direct = relocate(match.team1.players[i].direct); 
+
+        match.team2.players[i].direct += match.team2.players[i].action.dspd;
+        match.team2.players[i].direct = relocate(match.team2.players[i].direct); 
     }
     return 0;
 }
@@ -411,37 +402,40 @@ static int detect_collision(void)
             {
                 if (match.team1.players[i].action.ac_type == TY_SHOVEL)
                 {
-                    if (angle(match.team1.players[i].direct, match.team2.players[j].direct) < PI/2)
+                    if (fabsf(direct_diff(match.team1.players[i].direct, match.team2.players[j].direct)) < PI/2)
                     {
                         struct Event nevt = {FREEKICK, 1, match.team2.players[j].pos};
                         set_event(nevt);
                     }
-                    Direction dir = match.team2.players[j].direct;
-                    Speed spd = generate_speed(dir, 1, speed_per_power);
-                    act_tumble(&match.team2.players[j], dir, spd);
+                    struct Vector vec = direct2vector(match.team2.players[j].direct, INFINITE);
+                    Speed spd = generate_speed(vec, 1, speed_per_power);
+                    act_tumble(&match.team2.players[j], 0.0, spd);
                 }
                 else if (match.team2.players[j].action.ac_type == TY_SHOVEL)
                 {
-                    if (angle(match.team2.players[j].direct, match.team1.players[i].direct) < PI/2)
+                    if (fabsf(direct_diff(match.team2.players[j].direct, match.team1.players[i].direct)) < PI/2)
                     {
                         struct Event nevt = {FREEKICK, 2, match.team1.players[i].pos};
                         set_event(nevt);
                     }
-                    Direction dir = match.team1.players[i].direct;
-                    Speed spd = generate_speed(dir, 1, speed_per_power);
-                    act_tumble(&match.team1.players[i], dir, spd);
+                    struct Vector vec = direct2vector(match.team1.players[i].direct, INFINITE);
+                    Speed spd = generate_speed(vec, 1, speed_per_power);
+                    act_tumble(&match.team1.players[i], 0.0, spd);
                 }
-                else if (match.team1.players[i].attr.body < match.team2.players[j].attr.body)
+                else if (modular(match.team1.players[i].action.spd) != 0 && modular(match.team2.players[i].action.spd) != 0.0)
                 {
-                    Direction dir = match.team1.players[i].direct;
-                    Speed spd = generate_speed(dir, 0.7, speed_per_power);
-                    act_tumble(&match.team1.players[i], dir, spd);
-                }
-                else if (match.team1.players[i].attr.body > match.team2.players[j].attr.body)
-                {
-                    Direction dir = match.team2.players[j].direct;
-                    Speed spd = generate_speed(dir, 0.7, speed_per_power);
-                    act_tumble(&match.team2.players[j], dir, spd);
+                    if (match.team1.players[i].attr.body < match.team2.players[j].attr.body)
+                    {
+                        struct Vector vec = direct2vector(match.team1.players[i].direct, INFINITE);
+                        Speed spd = generate_speed(vec, 0.7, speed_per_power);
+                        act_tumble(&match.team1.players[i], 0.0, spd);
+                    }
+                    if (match.team1.players[i].attr.body > match.team2.players[j].attr.body)
+                    {
+                        struct Vector vec = direct2vector(match.team2.players[j].direct, INFINITE);
+                        Speed spd = generate_speed(vec, 0.7, speed_per_power);
+                        act_tumble(&match.team2.players[j], 0.0, spd);
+                    }
                 }
             }
         }
@@ -451,13 +445,13 @@ static int detect_collision(void)
 
 static int prepare4starting(struct Match *mat)
 {
-    init_players_pos(mat);
     mat->ball.pos.x = 0.5*Lfield;
     mat->ball.pos.y = 0.5*Wfield;
     mat->ball.pos.z = 0.0;
     mat->ball.spd.x = 0.0;
     mat->ball.spd.y = 0.0;
     mat->ball.spd.z = 0.0;
+    init_players_pos(mat);
     //2. 初始化完毕，报告GUI
     strcpy(c.name,"READY");
     send_cmd(sock, &c);
@@ -472,80 +466,86 @@ static int prepare4starting(struct Match *mat)
     return 0;
 }
 
-static void move_to_ball(struct Player *pp, int power)
+static void none_action(struct Player *pp)
+{
+    if (i_own_ball(pp))
+        act_hold(pp, 0.0);
+    else
+        act_stay(pp, 0.0);
+}
+
+static void move_to_ball(struct Player *pp, int spower)
 {
     float dis = distance(pp->pos, match.ball.pos);
     if (dis <= HOLD_DISTANCE)
         act_short_pass(pp);
     else
-        act_runto(pp, direct_to_ball(pp), match.ball.pos, power);
+        act_runto(pp, direct_to_ball(pp), match.ball.pos, 180, spower);
 }
 
-static void long_pass(struct Player *pp, int power)
+static void long_pass(struct Player *pp, int spower)
 {
-    Direction dirt = pp->direct;
-    dirt.z = sqrt(dirt.x*dirt.x + dirt.y*dirt.y)/2.0;
-    Speed spd;
-    spd = generate_speed(dirt, power, ((1.0/105.0)*Lfield/match.nTick));
-    if (act_kick(pp, pp->direct, spd) == -1)
-        act_runto(pp, direct_to_ball(pp), match.ball.pos, 10);
+    struct Vector vec = direct2vector(pp->direct, INFINITE);
+    vec.z = sqrt(vec.x*vec.x + vec.y*vec.y)/2.0;
+    Speed bspd;
+    bspd = generate_speed(vec, spower, speed_per_power);
+    Speed still = {0.0, 0.0, 0.0};
+    if (act_runto(pp, direct_to_ball(pp), match.ball.pos, 180, 10) == DONE)
+        act_kick(pp, 0.0, match.ball.spd, bspd);
 
 }
 
-static void run_up(struct Player *pp, int power)
+static void run_up(struct Player *pp, int spower)
 {
     Speed spd;
-    Direction up = {0, 1, 0};
-    spd = generate_speed(up, power,((1.0/105.0)*Lfield/match.nTick));
-    if (rbt_i_have_ball(pp))
-    {
-        if (act_dribble(pp, up, spd) == -1)
-            act_run(pp, (Direction)spd, spd);
-    }
-    else
-        act_run(pp, (Direction)spd, spd);
+    Dirspeed dirspd;
+    Direction up = PI/2.0;
+    Angle agl = direct_diff(pp->direct, up);
+    dirspd = generate_dirspd(agl, 180, dirspd_per_power);
+    struct Vector vec_up = {0, INFINITE, 0};
+    spd = generate_speed(vec_up, spower, speed_per_power);
+    Speed ballspd = multiply(spd, 1.2);
+    if (act_dribble(pp, dirspd, spd, ballspd) == IMPOSSIBLE)
+        act_run(pp, dirspd, spd);
 }
 
-static void run_down(struct Player *pp, int power)
+static void run_down(struct Player *pp, int spower)
 {
     Speed spd;
-    Direction down = {0, -1, 0};
-    spd = generate_speed(down, power,((1.0/105.0)*Lfield/match.nTick));
-    if (rbt_i_have_ball(pp))
-    {
-        if (act_dribble(pp, down, spd) == -1)
-            act_run(pp, (Direction)spd, spd);
-    }
-    else
-        act_run(pp, (Direction)spd, spd);
+    Direction down = -PI/2.0;
+    Angle agl = direct_diff(pp->direct, down);
+    Dirspeed dirspd = generate_dirspd(agl, 180, dirspd_per_power);
+    struct Vector vec_down = {0, -INFINITE, 0};
+    spd = generate_speed(vec_down, spower, speed_per_power);
+    Speed ballspd = multiply(spd, 1.2);
+    if (act_dribble(pp, dirspd, spd, ballspd) == IMPOSSIBLE)
+        act_run(pp, dirspd, spd);
 }
 
-static void run_left(struct Player *pp, int power)
+static void run_left(struct Player *pp, int spower)
 {
     Speed spd;
-    Direction left = {-1, 0, 0};
-    spd = generate_speed(left, power,((1.0/105.0)*Lfield/match.nTick));
-    if (rbt_i_have_ball(pp))
-    {
-        if (act_dribble(pp, left, spd) == -1)
-            act_run(pp, (Direction)spd, spd);
-    }
-    else
-        act_run(pp, (Direction)spd, spd);
+    Direction left = PI;
+    Angle agl = direct_diff(pp->direct, left);
+    Dirspeed dirspd = generate_dirspd(agl, 180, dirspd_per_power);
+    struct Vector vec_left = {-INFINITE, 0, 0};
+    spd = generate_speed(vec_left, spower, speed_per_power);
+    Speed ballspd = multiply(spd, 1.2);
+    if (act_dribble(pp, dirspd, spd, ballspd) == IMPOSSIBLE)
+        act_run(pp, dirspd, spd);
 }
 
-static void run_right(struct Player *pp, int power)
+static void run_right(struct Player *pp, int spower)
 {
     Speed spd;
-    Direction right = {1, 0, 0};
-    spd = generate_speed(right, power,((1.0/105.0)*Lfield/match.nTick));
-    if (rbt_i_have_ball(pp))
-    {
-        if (act_dribble(pp, right, spd) == -1)
-            act_run(pp, (Direction)spd, spd);
-    }
-    else
-        act_run(pp, (Direction)spd, spd);
+    Direction right = 0.0;
+    Angle agl = direct_diff(pp->direct, right);
+    Dirspeed dirspd = generate_dirspd(agl, 180, dirspd_per_power);
+    struct Vector vec_right = {INFINITE, 0, 0};
+    spd = generate_speed(vec_right, spower, speed_per_power);
+    Speed ballspd = multiply(spd, 1.2);
+    if (act_dribble(pp, dirspd, spd, ballspd) == IMPOSSIBLE)
+        act_run(pp, dirspd, spd);
 }
 
 static int action_on_cmd(struct Cmd command)
@@ -563,25 +563,30 @@ static int action_on_cmd(struct Cmd command)
         run_right(focuser, command.power);
     else if (com_shot(command)) //strcmp(command.name, "SPACE") == 0)
     {
-        if (rbt_i_have_ball(focuser))
+        if (i_own_ball(focuser))
         {
-            Direction dirt = {Lfield - 2*Meter - focuser->pos.x, Wfield/2.0 - focuser->pos.y, 0.0};
-            dirt.z = sqrt(dirt.x*dirt.x + dirt.y*dirt.y)/2.0;
-            if (act_shot(focuser, dirt, generate_speed(dirt, command.power, speed_per_power)) == -1)
-                act_runto(focuser, direct_to_ball(focuser), match.ball.pos, 10);
+            struct Vector vec = {Lfield - 2*Meter - focuser->pos.x, Wfield/2.0 - focuser->pos.y, 0.0};
+            vec.z = sqrt(vec.x*vec.x + vec.y*vec.y)/2.0;
+            Speed bspd = generate_speed(vec, command.power, speed_per_power);
+            Angle agl = direct_diff(focuser->direct, vector2direct(vec));
+            Dirspeed dspd = generate_dirspd(agl, 240, dirspd_per_power);
+            if (act_runto(focuser, direct_to_ball(focuser), match.ball.pos, 180, 10) == DONE)
+                act_shot(focuser, dspd, match.ball.spd, bspd);
         }
         else
         {
-            printf("shovel\n");
-            Direction dirt = direct_to_ball(focuser);
-            Speed spd = generate_speed(dirt, 8, speed_per_power);
-            act_shovel(focuser, dirt, spd);
+            // shovel
+            Angle agl = direct_diff(focuser->direct, direct_to_ball(focuser));
+            Dirspeed dspd = generate_dirspd(agl, 180, dirspd_per_power);
+            struct Vector vec = vector(focuser->pos, match.ball.pos);
+            Speed spd = generate_speed(vec, 8, speed_per_power);
+            act_shovel(focuser, dspd, spd, spd);
         }
     }
     else if (com_long_pass(command)) //strcmp(command.name, "L") == 0)
         long_pass(focuser, command.power);
     else if (com_none(command)) //strcmp(command.name, "NONE") == 0)
-        act_stay(focuser, focuser->direct);
+        none_action(focuser);
     else if (com_move_to_ball(command)) //strcmp(command.name, "K") == 0)
         move_to_ball(focuser, command.power);
     else 
@@ -762,14 +767,53 @@ static void clean_up(void)
     clean_match(&match);
 }
 
-void set_ball_spd(struct Ball *ball, Speed bspd)
+static float maxin2(float a, float b)
 {
-    ball->spd.x = bspd.x;
-    ball->spd.y = bspd.y;
-    ball->spd.z = bspd.z;
+    if (fabsf(a) > fabsf(b))
+        return a;
+    else
+        return b;
+}
 
-    ball->kicked = 1;
-    return;
+static Speed add_speed(Speed spd1, Speed spd2)
+{
+    float x;
+    if (spd1.x * spd2.x <= 0)
+        x = spd1.x + spd2.x;
+    else
+        x = maxin2(spd1.x, spd2.x);
+    float y;
+    if (spd1.y * spd2.y <= 0)
+        y = spd1.y + spd2.y;
+    else
+        y = maxin2(spd1.y, spd2.y);
+    float z;
+    if (spd1.z * spd2.z <= 0)
+        z = spd1.z + spd2.z;
+    else
+        z = maxin2(spd1.z, spd2.z);
+    Speed re = {x, y, z};
+    return re;
+}
+
+void change_ball_speed(Speed added_spd, struct Vector norm, float ref_factor)
+{
+    if (angle(match.ball.spd, norm) <= PI/2.0)
+    {
+        match.ball.spd = add_speed(match.ball.spd, added_spd);
+    }
+    else
+    {
+        struct Vector ref_vec = reflecting(match.ball.spd, norm);
+        struct Vector left_spd = multiply(ref_vec, -ref_factor);
+        match.ball.spd = add_speed(left_spd, added_spd);
+    }
+}
+
+Angle direct_to_ball(struct Player *pp)
+{
+    struct Vector vec = vector(pp->pos, match.ball.pos);
+    return vector2direct(vec);
 }
 
 int main(void)

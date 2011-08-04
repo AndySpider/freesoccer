@@ -11,53 +11,75 @@ float distance(Position pos1, Position pos2)
     return re;
 }
 
-Direction normalizing(Direction dir)
+struct Vector normalizing(struct Vector vec)
 {
-    if (dir.x == 0 && dir.y == 0 && dir.z == 0)
-        return dir;
+    if (vec.x == 0 && vec.y == 0 && vec.z == 0)
+        return vec;
 
-    Direction d, o;
+    struct Vector d, o;
     float len;
     o.x = 0;
     o.y = 0;
     o.z = 0;
-    len = distance(o, dir);
-    d.x = 1.0/len*dir.x;
-    d.y = 1.0/len*dir.y;
-    d.z = 1.0/len*dir.z;
+    len = distance(o, vec);
+    d.x = 1.0/len*vec.x;
+    d.y = 1.0/len*vec.y;
+    d.z = 1.0/len*vec.z;
     return d;
 }
 
-int generate_power(Speed spd, float s_p_p)
+int generate_spower(Speed spd, float s_p_p)
 {
-    int power;
-    Direction dirt = normalizing(spd);
-    if (dirt.x != 0)
-        power = spd.x / (dirt.x * s_p_p);
-    else if (dirt.y != 0)
-        power = spd.y / (dirt.y * s_p_p);
-    else if (dirt.z != 0)
-        power = spd.z / (dirt.z * s_p_p);
+    int power = 0;
+    struct Vector vec = normalizing(spd);
+    if (vec.x != 0)
+        power = spd.x / (vec.x * s_p_p);
+    else if (vec.y != 0)
+        power = spd.y / (vec.y * s_p_p);
+    else if (vec.z != 0)
+        power = spd.z / (vec.z * s_p_p);
     return power;
 }
 
-Speed generate_speed(Direction dir, int power, float s_p_p)
+int generate_dpower(Dirspeed dspd, float d_p_p)
 {
-    Direction d;
-    d = normalizing(dir);
+    return fabsf(dspd) / d_p_p;
+}
+
+Speed generate_speed(struct Vector vec, int power, float s_p_p)
+{
+    struct Vector d;
+    d = normalizing(vec);
     d.x = d.x * s_p_p * power;
     d.y = d.y * s_p_p * power;
     d.z = d.z * s_p_p * power;
-    return (Speed)d;
+    if (modular(d) > modular(vec))     // vec passed in should lie from orgin to destination
+        return (Speed)vec;
+    else
+        return (Speed)d;
 }
 
-float angle(Direction dir1, Direction dir2)
+Dirspeed generate_dirspd(Angle agl, int power, float d_p_p)
+{
+    if (agl == 0.0)
+        return 0.0;
+
+    int sign = agl / fabs(agl);
+    Dirspeed dspd = power * d_p_p * sign;
+
+    if (dspd*dspd > agl*agl)
+        return agl;
+            
+    return dspd;
+}
+
+Angle angle(struct Vector dir1, struct Vector dir2)
 {
     if ((dir1.x == 0 && dir1.y == 0 && dir1.z == 0)
             || (dir2.x == 0 && dir2.y == 0 && dir2.z == 0))
             return -1;
 
-    Direction d1, d2;
+    struct Vector d1, d2;
     float dis, ang;
     d1 = normalizing(dir1);
     d2 = normalizing(dir2);
@@ -66,9 +88,9 @@ float angle(Direction dir1, Direction dir2)
     return ang;
 }
 
-Direction direction(Position pos1, Position pos2)
+struct Vector vector(Position pos1, Position pos2)
 {
-    Direction dir;
+    struct Vector dir;
     dir.x = pos2.x - pos1.x;
     dir.y = pos2.y - pos1.y;
     dir.z = pos2.z - pos1.z;
@@ -203,4 +225,49 @@ struct Vector counter_vector(struct Vector vec)
 {
     struct Vector v = {-vec.x, -vec.y, -vec.z};
     return v;
+}
+
+struct Vector direct2vector(Direction dir, float len)
+{
+    struct Vector vec;
+    vec.x = cos(dir) * len;
+    vec.y = sin(dir) * len;
+    vec.z = 0.0;
+    return vec;
+}
+
+Direction vector2direct(struct Vector vec)
+{
+    if (vec.x == 0 && vec.y == 0)
+        return -1;
+    float len = sqrt(vec.x * vec.x + vec.y * vec.y);
+    Direction dirt;
+    dirt = acos(vec.x / len);
+    if (vec.y < 0)
+        dirt = 2*PI - dirt;
+    return dirt;
+}
+
+struct Vector multiply(struct Vector vec, float factor)
+{
+    struct Vector re = {vec.x * factor, vec.y * factor, vec.z * factor};
+    return re;
+}
+
+Direction direct_diff(Direction dir1, Direction dir2)
+{
+    Angle dir = dir2 - dir1;
+    if (dir <= PI && dir >= -PI)
+        return dir;
+    else if (dir > PI)
+        dir -= 2*PI;
+    else if (dir < -PI)
+        dir += 2*PI;
+
+    return direct_diff(0.0, dir);
+}
+
+Direction relocate(Direction dir)
+{
+    return direct_diff(0.0, dir);
 }

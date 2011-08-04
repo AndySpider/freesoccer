@@ -2,21 +2,23 @@
 #define ACTION_H_
 #include <math.h>
 
-int act_runto(struct Player *, Direction, Position pos, int power);
-int act_dribble(struct Player *, Direction, Speed);
-int act_run(struct Player *, Direction, Speed);
-int act_kick(struct Player *, Direction, Speed);
-int act_shovel(struct Player *, Direction, Speed);
-int act_stay(struct Player *, Direction);
-int act_pounce(struct Player *, Direction, Speed);
-int act_keep(struct Player *, Direction);
+typedef enum {IMPOSSIBLE = -1, UNFINISHED, DONE} AC_RESULT;
+
+int act_runto(struct Player *, Direction, Position pos, int apower, int ppower);
+int act_dribble(struct Player *, Dirspeed, Speed, Speed);
+int act_run(struct Player *, Dirspeed, Speed);
+int act_kick(struct Player *, Dirspeed, Speed, Speed);
+int act_shovel(struct Player *, Dirspeed, Speed, Speed);
+int act_hold(struct Player *, Dirspeed);
+int act_stay(struct Player *, Dirspeed);
+int act_pounce(struct Player *, Dirspeed, Speed);
+int act_keep(struct Player *, Dirspeed);
 //void act_turn(struct Player *);
-int act_shot(struct Player *, Direction, Speed);
-int act_tumble(struct Player *, Direction, Speed);
+int act_shot(struct Player *, Dirspeed, Speed, Speed);
+int act_tumble(struct Player *, Dirspeed, Speed);
 
 int act_short_pass(struct Player *);
 // actions
-/*actions types: first 4 bits*/
 #define TY_RUN      1  
 #define TY_KICK     2
 #define TY_STAY     3
