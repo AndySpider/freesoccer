@@ -58,7 +58,7 @@ static void rbt_keeper_robot(struct Player *pp, struct Match *mat)
         agl = direct_diff(pp->direct, vector2direct(vec));
         dspd = generate_dirspd(agl, 180, dirspd_per_power);
         vec.z = 0.5 * INFINITE;
-        act_shot(pp, dspd, match.ball.spd, generate_speed(vec, 20, speed_per_power));
+        act_shot(pp, dspd, generate_speed(match.ball.spd, 5, speed_per_power), generate_speed(vec, 20, speed_per_power));
     }
 }
 
@@ -111,7 +111,7 @@ static void rbt_back_robot(struct Player *pp, struct Match *mat)
             dspd = generate_dirspd(agl, 180, dirspd_per_power);
             act_hold(pp, dspd);
             vec.z = 1.0 * INFINITE;
-            act_shot(pp, dspd, match.ball.spd, generate_speed(vec, 15, speed_per_power));
+            act_shot(pp, dspd, generate_speed(match.ball.spd, 5, speed_per_power), generate_speed(vec, 15, speed_per_power));
     }
 }
 
@@ -167,7 +167,7 @@ static void rbt_middle_robot(struct Player *pp, struct Match *mat)
             dspd = generate_dirspd(agl, 180, dirspd_per_power);
             act_hold(pp, dspd);
             vec.z = 1.0 * INFINITE;
-            act_shot(pp, dspd, match.ball.spd, generate_speed(vec, 13, speed_per_power));
+            act_shot(pp, dspd, generate_speed(match.ball.spd, 5, speed_per_power), generate_speed(vec, 13, speed_per_power));
     }
 }
 
@@ -220,7 +220,7 @@ static void rbt_front_robot(struct Player *pp, struct Match *mat)
             Speed spd = generate_speed(vec , 15, speed_per_power);
             agl = direct_diff(pp->direct, vector2direct(vec));
             dspd = generate_dirspd(agl, 180, dirspd_per_power);
-            act_shot(pp, dspd, match.ball.spd, spd);
+            act_shot(pp, dspd, generate_speed(match.ball.spd, 5, speed_per_power), spd);
         }
         else
         {

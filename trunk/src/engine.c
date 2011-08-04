@@ -489,9 +489,8 @@ static void long_pass(struct Player *pp, int spower)
     vec.z = sqrt(vec.x*vec.x + vec.y*vec.y)/2.0;
     Speed bspd;
     bspd = generate_speed(vec, spower, speed_per_power);
-    Speed still = {0.0, 0.0, 0.0};
     if (act_runto(pp, direct_to_ball(pp), match.ball.pos, 180, 10) == DONE)
-        act_kick(pp, 0.0, match.ball.spd, bspd);
+        act_kick(pp, 0.0, generate_speed(match.ball.spd, 5, speed_per_power), bspd);
 
 }
 
@@ -569,9 +568,9 @@ static int action_on_cmd(struct Cmd command)
             vec.z = sqrt(vec.x*vec.x + vec.y*vec.y)/2.0;
             Speed bspd = generate_speed(vec, command.power, speed_per_power);
             Angle agl = direct_diff(focuser->direct, vector2direct(vec));
-            Dirspeed dspd = generate_dirspd(agl, 240, dirspd_per_power);
+            Dirspeed dspd = generate_dirspd(agl, 180, dirspd_per_power);
             if (act_runto(focuser, direct_to_ball(focuser), match.ball.pos, 180, 10) == DONE)
-                act_shot(focuser, dspd, match.ball.spd, bspd);
+                act_shot(focuser, dspd, generate_speed(match.ball.spd, 5, speed_per_power), bspd);
         }
         else
         {
@@ -580,7 +579,8 @@ static int action_on_cmd(struct Cmd command)
             Dirspeed dspd = generate_dirspd(agl, 180, dirspd_per_power);
             struct Vector vec = vector(focuser->pos, match.ball.pos);
             Speed spd = generate_speed(vec, 8, speed_per_power);
-            act_shovel(focuser, dspd, spd, spd);
+            Speed bspd = multiply(spd, 1.4);
+            act_shovel(focuser, dspd, spd, bspd);
         }
     }
     else if (com_long_pass(command)) //strcmp(command.name, "L") == 0)

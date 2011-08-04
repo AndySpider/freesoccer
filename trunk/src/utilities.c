@@ -239,7 +239,7 @@ struct Vector direct2vector(Direction dir, float len)
 Direction vector2direct(struct Vector vec)
 {
     if (vec.x == 0 && vec.y == 0)
-        return -1;
+        return INFINITE;
     float len = sqrt(vec.x * vec.x + vec.y * vec.y);
     Direction dirt;
     dirt = acos(vec.x / len);
@@ -269,5 +269,8 @@ Direction direct_diff(Direction dir1, Direction dir2)
 
 Direction relocate(Direction dir)
 {
+    if (dir == INFINITE)   // support for vector2direct()
+        return INFINITE;
+
     return direct_diff(0.0, dir);
 }
