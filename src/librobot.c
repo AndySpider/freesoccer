@@ -11,7 +11,7 @@ Scope volley_area[22];
 struct Player *find_to_passer(struct Player *pp)
 {
     struct Vector vec;
-    Angle ang, min_ang = 10.0;   // 10.0 > 2*PI
+    Angle ang, min_ang = PI/2.0;   //  > 2*PI
     int i, id = -1;
     struct Team *t = rbt_my_team(pp);
     float dis = 0.0;
@@ -19,40 +19,40 @@ struct Player *find_to_passer(struct Player *pp)
     {
         for (i=0; i<11; i++)
         {
+           if (i == pp->id)
+               continue;
            vec.x = match.team1.players[i].pos.x - pp->pos.x;
            vec.y = match.team1.players[i].pos.y - pp->pos.y;
 
-           ang = vector2direct(vec);
-           if (ang == -1)        // pp himself
-               continue;
-           else if (ang < min_ang)
+           ang = direct_diff(pp->direct, relocate(vector2direct(vec)));
+           if (fabsf(ang) < fabsf(min_ang))
            {
                min_ang = ang;
                id = i;
                dis = distance(pp->pos, match.team1.players[i].pos);
            }
         }
-        if (dis <= 30*Meter)
+        if (id != -1 && dis <= 30*Meter)
             return &match.team1.players[id];
     }
     if (t->id == 2)
     {
         for (i=0; i<11; i++)
         {
+           if (i == pp->id)
+               continue;
            vec.x = match.team2.players[i].pos.x - pp->pos.x;
            vec.y = match.team2.players[i].pos.y - pp->pos.y;
 
-           ang = vector2direct(vec);
-           if (ang == -1)
-               continue;
-           else if (ang < min_ang)
+           ang = direct_diff(pp->direct, relocate(vector2direct(vec)));
+           if (fabsf(ang) < fabsf(min_ang))
            {
                min_ang = ang;
                id = i;
                dis = distance(pp->pos, match.team2.players[i].pos);
            }
         }
-        if (dis <= 30*Meter)
+        if (id != -1 && dis <= 30*Meter)
             return &match.team2.players[id];
     }
     return NULL;

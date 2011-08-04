@@ -178,7 +178,6 @@ static void set_frame(struct Player *pp, int frame)
 
 static void complete_action(struct Player *pp)
 {
-    Speed still = {0.0, 0.0, 0.0};
     float dis;
     int frame = ACTION_FRAME(pp->action);
     Speed bspd = ACTION_BALLSPEED(pp->action);
@@ -193,7 +192,7 @@ static void complete_action(struct Player *pp)
                 dis = distance(pp->pos, match.ball.pos);
                 if (dis <= HOLD_DISTANCE) 
                 {
-                    change_ball_speed(bspd, (struct Vector)bspd, -0.1);
+                    change_ball_speed(bspd, (struct Vector)bspd, -0.2);
                     match.ball.kicked = 1;
                     match.ball.last_toucher = pp;
                 }
@@ -203,7 +202,7 @@ static void complete_action(struct Player *pp)
             dis = distance(pp->pos, match.ball.pos);
             if (dis <= HOLD_DISTANCE)
             {
-                change_ball_speed(bspd, (struct Vector)bspd, -0.1);
+                change_ball_speed(bspd, (struct Vector)bspd, -0.2);
                 match.ball.kicked = 1;
                 match.ball.last_toucher = pp;
             }
@@ -214,7 +213,7 @@ static void complete_action(struct Player *pp)
             dis = distance(pp->pos, match.ball.pos);
             if (dis <= HOLD_DISTANCE)
             {
-                change_ball_speed(still, direct2vector(pp->direct, 1), -0.05);
+                change_ball_speed(counter_vector(match.ball.spd), direct2vector(pp->direct, 1), -0.1);
                 match.ball.last_toucher = pp;
             }
             break;
@@ -222,7 +221,7 @@ static void complete_action(struct Player *pp)
             dis = distance(pp->pos, match.ball.pos);
             if (dis <= HOLD_DISTANCE)
             {
-                change_ball_speed(still, direct2vector(pp->direct, 1), -0.05);
+                change_ball_speed(counter_vector(match.ball.spd), direct2vector(pp->direct, 1), -0.1);
                 match.ball.keeped = 1;
                 match.ball.last_toucher = pp;
             }
@@ -231,7 +230,7 @@ static void complete_action(struct Player *pp)
             dis = distance(pp->pos, match.ball.pos);
             if (dis <= HOLD_DISTANCE)    // set spd of ball before that of pp!
             {
-                change_ball_speed(pp->action.spd, direct2vector(pp->direct, 1), -0.05);
+                change_ball_speed(pp->action.spd, direct2vector(pp->direct, 1), -0.1);
                 match.ball.keeped = 1;
                 match.ball.last_toucher = pp;
             }
@@ -377,7 +376,7 @@ int act_hold(struct Player *pp, Dirspeed dspd)
     Speed still = {0.0, 0.0, 0.0};
     Action action = generate_action(TY_HOLD, dspd, still, arbi_bspd, FR_HOLD);
 
-    AC_RESULT re = act_runto(pp, direct_to_ball(pp), match.ball.pos, 180, 8);
+    AC_RESULT re = act_runto(pp, direct_to_ball(pp), match.ball.pos, 180, 5);
     if ( re == DONE )
     {
         adjust_ball_pos(pp, pp->direct + dspd);
@@ -468,7 +467,7 @@ int act_short_pass(struct Player *pp)
     }
     bspd = generate_speed(vec, spower, speed_per_power);
     dspd = generate_dirspd(dir, dpower, dirspd_per_power);
-    return act_kick(pp, dspd, match.ball.spd, bspd);
+    return act_kick(pp, dspd, generate_speed(match.ball.spd, 5, speed_per_power), bspd);
 }
 
 
