@@ -9,6 +9,7 @@
 #include "coordinate.h"
 #include "comm.h"
 #include "utilities.h"
+#include "config.h"
 
 struct Ball ball;
 struct Player players1[11];
@@ -41,6 +42,14 @@ GLfloat beginM = 0.0;
 GLfloat lookX;
 GLfloat lookY;
 GLfloat lookZ;
+
+GLfloat holder_diffuse[] = {1.0, 1.0, 1.0, 1.0};
+GLfloat focuser_diffuse[] = {1.0, 0.0, 1.0, 1.0};
+GLfloat team1_diffuse[] = {0.0, 0.0, 1.0, 1.0};
+GLfloat team2_diffuse[] = {0.0, 1.0, 0.0, 1.0};
+GLfloat field_diffuse[] = {0.1, 0.2, 0.1, 1.0};
+GLfloat line_diffuse[] = {1.0, 1.0, 1.0, 1.0};
+GLfloat ball_diffuse[] = {1.0, 1.0, 1.0, 1.0};
 
 void init_players(void)
 {
@@ -82,9 +91,10 @@ void drawball(struct Ball b)
     x = b.pos.x*scale_ratio;
     y = b.pos.y*scale_ratio;
     z = b.pos.z*scale_ratio;
-    glPointSize(5.0);
-    glColor3f(1.0, 1.0, 1.0);
     glPushMatrix();
+    glPointSize(5.0);
+    //glMaterialfv(GL_FRONT, GL_DIFFUSE, ball_diffuse);
+    glColor3f(1.0, 1.0, 1.0);
     glTranslatef(x, y, z);
     glutSolidSphere(0.3*scale_ratio, 15, 15);
     glPopMatrix();
@@ -97,18 +107,24 @@ void drawplayer(struct Player p)
     x = p.pos.x*scale_ratio;
     y = p.pos.y*scale_ratio;
     z = p.pos.z*scale_ratio;
+    //GLfloat player_ambient[];
 
     GLfloat radio = 0.4*scale_ratio, height = 1.8*scale_ratio;
 
+    glPushMatrix();
     if (p.id == holder)
+        //glMaterialfv(GL_FRONT, GL_DIFFUSE, holder_diffuse);
         glColor3f(1.0, 1.0, 0.0);
     else if (p.id == focuser)
+        //glMaterialfv(GL_FRONT, GL_DIFFUSE, focuser_diffuse);
         glColor3f(1.0, 0.0, 1.0);
     else if(p.id <= 10)
+        //glMaterialfv(GL_FRONT, GL_DIFFUSE, team1_diffuse);
         glColor3f(0.0, 0.0, 1.0);
     else
+        //glMaterialfv(GL_FRONT, GL_DIFFUSE, team2_diffuse);
         glColor3f(0.0, 1.0, 0.0);
-    glPushMatrix();
+
     glTranslatef(x, y, z);
 
     if (p.action.ac_type == TY_TUMBLE) 
@@ -150,10 +166,13 @@ void drawplayer(struct Player p)
 void drawfield(void)
 {
     float x, y, angle;
+    // full_field
+    glPushMatrix();
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, field_diffuse);
     glColor3f(1, 1, 1);
     glLineWidth(3.0);
     glColor3f(0.1, 0.2, 0.1);
-    // full_field
+    glNormal3f(0.0, 0.0, 1.0);
     glBegin(GL_POLYGON);
     glVertex2f(0.0, 0.0);
     glVertex2f(Lfield*scale_ratio, 0.0);
@@ -177,7 +196,10 @@ void drawfield(void)
     glVertex2f(0.0, Wfield*scale_ratio);
     glVertex3f(0.0, Wfield*scale_ratio, 10.0);
     glEnd();
+    glPopMatrix();
     // center circle
+    glPushMatrix();
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, line_diffuse);
     glLineWidth(2.0);
     glBegin(GL_LINE_LOOP);
     for (angle=0.0; angle<2*3.14; angle+=0.01)
@@ -231,7 +253,10 @@ void drawfield(void)
     glVertex3f((Lfield - Lpenaltypoint)*scale_ratio, Wfield*scale_ratio/2.0, 0.0);
     glVertex3f(Lfield*scale_ratio/2.0, Wfield*scale_ratio/2.0, 0.0);
     glEnd();
+    glPopMatrix();
     // 2 gates
+    glPushMatrix();
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, line_diffuse);
     glLineWidth(4.0);
     glColor3f(1.0, 1.0, 1.0);
     glBegin(GL_LINE_LOOP);
@@ -246,6 +271,7 @@ void drawfield(void)
     glVertex3f(Lfield*scale_ratio,(Wfield*scale_ratio + Wgate*scale_ratio)/2.0, Hgate*scale_ratio);
     glVertex3f(Lfield*scale_ratio,(Wfield*scale_ratio - Wgate*scale_ratio)/2.0, Hgate*scale_ratio);
     glEnd();
+    glPopMatrix();
 }
 void init(void)
 {
@@ -278,11 +304,12 @@ void init(void)
     
     strcpy(c.name, "NONE");
     glClearColor(0.0, 0.0, 0.0, 0.0);
+    glShadeModel(GL_SMOOTH);
     //GLfloat light_position[] = {Lfield*scale_ratio/2.0, Wfield*scale_ratio/2.0, 20.0*scale_ratio};
     //glLightfv(GL_LIGHT0, GL_POSITION, light_position);
     //glEnable(GL_LIGHTING);
     //glEnable(GL_LIGHT0);
-    //glShadeModel(GL_SMOOTH);
+    //glEnable(GL_DEPTH_TEST);
 }
 
 void reshape(int w, int h)
@@ -318,19 +345,19 @@ void keyboard(unsigned char key, int x, int y)
             break;
         case 'w':
             strcpy(c.name, "UP");
-            c.power = 5;
+            c.power = 6;
             break;
         case 'a':
             strcpy(c.name, "LEFT");
-            c.power = 5;
+            c.power = 6;
             break;
         case 's':
             strcpy(c.name, "DOWN");
-            c.power = 5;
+            c.power = 6;
             break;
         case 'd':
             strcpy(c.name, "RIGHT");
-            c.power = 5;
+            c.power = 6;
             break;
         case 'l':
             strcpy(c.name, "LPASS");
@@ -338,7 +365,7 @@ void keyboard(unsigned char key, int x, int y)
             break;
         case 'k':
             strcpy(c.name, "MTOBALL");
-            c.power = 7;
+            c.power = 8;
             break;
         case 'r':
             strcpy(c.name, "RESTART");
@@ -370,7 +397,7 @@ void set_positions(struct Status *sts)
 void display()
 {
     int i;
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glPushMatrix();
     glTranslatef(0.0, 0.0, - sdepth);
     glRotatef ((GLfloat) spinz, 0.0, 0.0, 1.0);
@@ -470,9 +497,9 @@ void motion(int x, int y)
 int main(int argc, char** argv)
 {
    glutInit(&argc, argv);
-   glutInitDisplayMode (GLUT_DOUBLE);
+   glutInitDisplayMode (GLUT_DOUBLE | GLUT_DEPTH);
    glutInitWindowSize (Lfield*scale_ratio, Wfield*scale_ratio);
-   glutCreateWindow (argv[0]);
+   glutCreateWindow (PACKAGE_STRING);
    init();
    glutReshapeFunc (reshape);
    glutMouseFunc(mouse);

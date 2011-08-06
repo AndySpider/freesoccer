@@ -379,8 +379,8 @@ int act_hold(struct Player *pp, Dirspeed dspd)
     AC_RESULT re = act_runto(pp, direct_to_ball(pp), match.ball.pos, 180, 5);
     if ( re == DONE )
     {
-        adjust_ball_pos(pp, pp->direct + dspd);
         do_action(pp, action);
+        adjust_ball_pos(pp, pp->direct + dspd);
     }
 
     return UNFINISHED;
@@ -478,7 +478,7 @@ int act_shot(struct Player *pp, Dirspeed dspd, Speed spd, Speed bspd)
 
 int act_runto(struct Player *pp, Direction dir, Position pos, int dpower, int spower)
 {
-    if (distance(pp->pos, pos) <= HOLD_DISTANCE )
+    if (distance(pp->pos, pos) <= 0.8 * HOLD_DISTANCE )
         return DONE;
 
     struct Vector d;
@@ -510,8 +510,8 @@ int act_dribble(struct Player *pp, Dirspeed dspd, Speed spd, Speed bspd)
     AC_RESULT re = act_runto(pp, direct_to_ball(pp), match.ball.pos, dpower, spower);
     if (re == DONE)
     {
-        adjust_ball_pos(pp, pp->direct + dspd);
         do_action(pp, ac);
+        adjust_ball_pos(pp, pp->direct + dspd);
     }
 
     return UNFINISHED;
