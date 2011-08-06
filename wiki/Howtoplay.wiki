@@ -8,12 +8,16 @@ Since this project has included a simple front-end program, you can play and tes
 
 = Details =
 
-To play the game: run engine first, then run testGUI
+To play the game: 
+     run engine first, then run testGUI
 
 Controls in testGUI:    
                "W S A D" to move player in up, down, left, and right directions.
+
                "SPACE" to shot or tackle.
+
                "K" to catch up with ball, and pass if holding ball.
+
                "L" to long pass.
 
 
