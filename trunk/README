@@ -1,3 +1,22 @@
 TO pass ./configure, "freeglut" and "freeglut-dev" need to be installed first.
 
-RUN ./play.sh to play the game.
+To play the game: 
+
+           run engine first, then run testGUI
+
+Controls in testGUI:    
+
+    "W S A D" to move player in up, down, left, and right directions.
+
+    "SPACE" to shot or tackle.
+
+    "K" to catch up with ball, and pass if holding ball.
+
+    "L" to long pass.
+
+    "R" to restart the game.
+
+    "Middle button of mouse" pulling to get a closer or further view.
+
+
+    "Right button of mouse" pulling to change view point.
