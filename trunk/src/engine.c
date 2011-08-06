@@ -951,7 +951,7 @@ restart:
             else 
             {
                 if (match.ball.spd.z*match.ball.spd.z >= 0.5*Meter/match.nTick)
-                    match.ball.spd.z = - match.ball.spd.z * 0.4;
+                    match.ball.spd.z = - match.ball.spd.z * 0.5;
                 else
                     match.ball.spd.z = 0.0;
                 acce_factor = 3.0;
@@ -964,6 +964,9 @@ restart:
         }
 
     }
+    printf("====================\n");
+    printf("Score: %d : %d\n", match.team1.score, match.team2.score);
+    printf("====================\n");
     clean_up();
     return 0;
 }

@@ -17,6 +17,16 @@ static void rbt_keeper_robot(struct Player *pp, struct Match *mat)
     Position bdest_pos = rbt_judge_ball_dest(pp);
     Scope my_volley_area = volley_area[pp->id];
 
+    if (rbt_i_have_ball(pp))
+    {
+        vec.x = -1.0 * INFINITE;
+        vec.y = 0.0;
+        vec.z = 0.0;
+        agl = direct_diff(pp->direct, vector2direct(vec));
+        dspd = generate_dirspd(agl, 180, dirspd_per_power);
+        vec.z = 0.5 * INFINITE;
+        act_shot(pp, dspd, generate_speed(match.ball.spd, 5, speed_per_power), generate_speed(vec, 20, speed_per_power));
+    }
 
     if (which_team_hold_ball() != t->id)
     {
@@ -50,16 +60,6 @@ static void rbt_keeper_robot(struct Player *pp, struct Match *mat)
     else
         stay_in_defence(pp);
 
-    if (rbt_i_have_ball(pp))
-    {
-        vec.x = -1.0 * INFINITE;
-        vec.y = 0.0;
-        vec.z = 0.0;
-        agl = direct_diff(pp->direct, vector2direct(vec));
-        dspd = generate_dirspd(agl, 180, dirspd_per_power);
-        vec.z = 0.5 * INFINITE;
-        act_shot(pp, dspd, generate_speed(match.ball.spd, 5, speed_per_power), generate_speed(vec, 20, speed_per_power));
-    }
 }
 
 static void rbt_back_robot(struct Player *pp, struct Match *mat)
@@ -84,7 +84,20 @@ static void rbt_back_robot(struct Player *pp, struct Match *mat)
     struct Vector vec = {bpos.x - pp->pos.x, bpos.y - pp->pos.y, bpos.z - pp->pos.z};
     Scope my_volley_area = volley_area[pp->id];
     
-    if (which_team_hold_ball() != t->id)
+    if (rbt_i_have_ball(pp))
+    {
+            vec.x = -1.0 * INFINITE;
+            vec.y = 0.0;
+            vec.z = 0.0;
+            agl = direct_diff(pp->direct, vector2direct(vec));
+            dspd = generate_dirspd(agl, 180, dirspd_per_power);
+            if (act_hold(pp, dspd) == DONE)
+            {
+                vec.z = 1.0 * INFINITE;
+                act_shot(pp, dspd, generate_speed(match.ball.spd, 5, speed_per_power), generate_speed(vec, 15, speed_per_power));
+            }
+    }
+    else if (which_team_hold_ball() != t->id)
     {
         if (!in_scope(my_volley_area, bpos))
         {
@@ -102,17 +115,6 @@ static void rbt_back_robot(struct Player *pp, struct Match *mat)
         act_stay(pp, dspd);
     }
 
-    if (rbt_i_have_ball(pp))
-    {
-            vec.x = -1.0 * INFINITE;
-            vec.y = 0.0;
-            vec.z = 0.0;
-            agl = direct_diff(pp->direct, vector2direct(vec));
-            dspd = generate_dirspd(agl, 180, dirspd_per_power);
-            act_hold(pp, dspd);
-            vec.z = 1.0 * INFINITE;
-            act_shot(pp, dspd, generate_speed(match.ball.spd, 5, speed_per_power), generate_speed(vec, 15, speed_per_power));
-    }
 }
 
 static void rbt_middle_robot(struct Player *pp, struct Match *mat)
@@ -139,7 +141,20 @@ static void rbt_middle_robot(struct Player *pp, struct Match *mat)
     }
     Scope my_volley_area = volley_area[pp->id];
     
-    if (which_team_hold_ball() != t->id)
+    if (rbt_i_have_ball(pp))
+    {
+            vec.x = -1.0 * INFINITE;
+            vec.y = 0.0;
+            vec.z = 0.0;
+            agl = direct_diff(pp->direct, vector2direct(vec));
+            dspd = generate_dirspd(agl, 180, dirspd_per_power);
+            if (act_hold(pp, dspd) == DONE)
+            {
+                vec.z = 1.0 * INFINITE;
+                act_shot(pp, dspd, generate_speed(match.ball.spd, 5, speed_per_power), generate_speed(vec, 13, speed_per_power));
+            }
+    }
+    else if(which_team_hold_ball() != t->id)
     {
         if (!in_scope(my_volley_area, bpos))
         {
@@ -158,17 +173,6 @@ static void rbt_middle_robot(struct Player *pp, struct Match *mat)
     else
         act_stay(pp, generate_dirspd(agl, 180, dirspd_per_power));
 
-    if (rbt_i_have_ball(pp))
-    {
-            vec.x = -1.0 * INFINITE;
-            vec.y = 0.0;
-            vec.z = 0.0;
-            agl = direct_diff(pp->direct, vector2direct(vec));
-            dspd = generate_dirspd(agl, 180, dirspd_per_power);
-            act_hold(pp, dspd);
-            vec.z = 1.0 * INFINITE;
-            act_shot(pp, dspd, generate_speed(match.ball.spd, 5, speed_per_power), generate_speed(vec, 13, speed_per_power));
-    }
 }
 
 static void rbt_front_robot(struct Player *pp, struct Match *mat)
