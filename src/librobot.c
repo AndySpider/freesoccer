@@ -1,3 +1,20 @@
+/* Copyright (C) 
+ * 2011 - hkuieagle
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * 
+ */
 #include "global.h"
 #include "coordinate.h"
 #include "engine.h"
@@ -556,6 +573,21 @@ void stay_in_defence(struct Player *pp)
         act_stay(pp, 0.0);
 }
 
+void stay_in_attach(struct Player *pp)
+{
+    Position bpos;
+    Direction dirt;
+    Scope my_volley_area = volley_area[pp->id];
+    bpos = rbt_where_ball();
+    int tid = rbt_my_team(pp)->id;
+
+    Position attach_pos = get_player_pos(my_volley_area, bpos, tid, match.first_half);
+    dirt = direct_to_ball(pp);
+    if (distance(pp->pos, attach_pos) > HOLD_DISTANCE)
+        act_runto(pp, dirt, attach_pos, 180, 2);
+    else
+        act_stay(pp, 0.0);
+}
 
 struct Vector pounce_vector(Position bpos, Position bdest_pos, Position keeper_pos)
 {

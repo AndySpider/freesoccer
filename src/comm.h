@@ -8,7 +8,7 @@
 #include <unistd.h>
 
 #define PORT 4444
-#define ADDR 172.0.0.1
+#define ADDR 127.0.0.1
 
 struct Init_data {
     Difficulty dif;
