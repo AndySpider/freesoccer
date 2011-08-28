@@ -1,3 +1,20 @@
+/* Copyright (C) 
+ * 2011 - hkuieagle
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * 
+ */
 #include "global.h"
 #include "engine.h"
 #include "coordinate.h"
@@ -86,16 +103,13 @@ static void rbt_back_robot(struct Player *pp, struct Match *mat)
     
     if (rbt_i_have_ball(pp))
     {
-            vec.x = -1.0 * INFINITE;
-            vec.y = 0.0;
-            vec.z = 0.0;
-            agl = direct_diff(pp->direct, vector2direct(vec));
-            dspd = generate_dirspd(agl, 180, dirspd_per_power);
-            if (act_hold(pp, dspd) == DONE)
-            {
-                vec.z = 1.0 * INFINITE;
-                act_shot(pp, dspd, generate_speed(match.ball.spd, 5, speed_per_power), generate_speed(vec, 15, speed_per_power));
-            }
+        vec.x = -1.0 * INFINITE;
+        vec.y = 0.0;
+        vec.z = 0.0;
+        agl = direct_diff(pp->direct, vector2direct(vec));
+        dspd = generate_dirspd(agl, 180, dirspd_per_power);
+        if (act_hold(pp, dspd) == DONE)
+            act_short_pass(pp);
     }
     else if (which_team_hold_ball() != t->id)
     {
@@ -105,14 +119,12 @@ static void rbt_back_robot(struct Player *pp, struct Match *mat)
         }
         else
         {
-            act_runto(pp, direct_to_ball(pp), topos, 180, 4);
+            act_runto(pp, direct_to_ball(pp), topos, 180, 7);
         }
     }
     else
     {
-        agl = direct_diff(pp->direct, direct_to_ball(pp));
-        dspd = generate_dirspd(agl, 180, dirspd_per_power);
-        act_stay(pp, dspd);
+        stay_in_attach(pp);
     }
 
 }
@@ -143,16 +155,13 @@ static void rbt_middle_robot(struct Player *pp, struct Match *mat)
     
     if (rbt_i_have_ball(pp))
     {
-            vec.x = -1.0 * INFINITE;
-            vec.y = 0.0;
-            vec.z = 0.0;
-            agl = direct_diff(pp->direct, vector2direct(vec));
-            dspd = generate_dirspd(agl, 180, dirspd_per_power);
-            if (act_hold(pp, dspd) == DONE)
-            {
-                vec.z = 1.0 * INFINITE;
-                act_shot(pp, dspd, generate_speed(match.ball.spd, 5, speed_per_power), generate_speed(vec, 13, speed_per_power));
-            }
+        vec.x = -1.0 * INFINITE;
+        vec.y = 0.0;
+        vec.z = 0.0;
+        agl = direct_diff(pp->direct, vector2direct(vec));
+        dspd = generate_dirspd(agl, 180, dirspd_per_power);
+        if (act_hold(pp, dspd) == DONE)
+            act_short_pass(pp);
     }
     else if(which_team_hold_ball() != t->id)
     {
@@ -171,8 +180,7 @@ static void rbt_middle_robot(struct Player *pp, struct Match *mat)
             act_runto(pp, direct_to_ball(pp), topos, 180, 3);
     }
     else
-        act_stay(pp, generate_dirspd(agl, 180, dirspd_per_power));
-
+        stay_in_attach(pp);
 }
 
 static void rbt_front_robot(struct Player *pp, struct Match *mat)
@@ -197,24 +205,6 @@ static void rbt_front_robot(struct Player *pp, struct Match *mat)
     struct Vector vec;
     Scope my_volley_area = volley_area[pp->id];
     
-   if (which_team_hold_ball() != t->id)
-   {
-        if (!in_scope(my_volley_area, bpos))
-        {
-            stay_in_defence(pp);
-        }
-        else
-        {
-            act_runto(pp, direct_to_ball(pp), topos, 180, 3);
-        }
-    }
-    else
-    {
-        agl = direct_diff(pp->direct, direct_to_ball(pp));
-        dspd = generate_dirspd(agl, 180, dirspd_per_power);
-        act_stay(pp, dspd);
-    }
-
     if (rbt_i_have_ball(pp))
     {
         if (pp->pos.x <= 36*Meter)
@@ -237,6 +227,21 @@ static void rbt_front_robot(struct Player *pp, struct Match *mat)
             Speed bspd = multiply(spd, 1.2);
             act_dribble(pp, dspd, spd, bspd);
         }
+    }
+    else if (which_team_hold_ball() != t->id)
+    {
+        if (!in_scope(my_volley_area, bpos))
+        {
+            stay_in_defence(pp);
+        }
+        else
+        {
+            act_runto(pp, direct_to_ball(pp), topos, 180, 3);
+        }
+    }
+    else
+    {
+        stay_in_attach(pp);
     }
 
 }

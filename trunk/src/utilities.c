@@ -1,9 +1,36 @@
+/* Copyright (C) 
+ * 2011 - hkuieagle
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ * 
+ */
 #include "global.h"
 #include "engine.h"
 #include "coordinate.h"
 #include "utilities.h"
 
 
+/* ----------------------------------------------------------------------------*/
+/**
+ * @Synopsis: distance 
+ *
+ * @Param: pos1
+ * @Param: pos2
+ *
+ * @Returns: distance bewteen pos1 and pos2
+ */
+/* ----------------------------------------------------------------------------*/
 float distance(Position pos1, Position pos2)
 {
     float re;
@@ -11,6 +38,15 @@ float distance(Position pos1, Position pos2)
     return re;
 }
 
+/* ----------------------------------------------------------------------------*/
+/**
+ * @Synopsis: normalizing normalizing a 3D vector
+ *
+ * @Param: vec
+ *
+ * @Returns: normalized vector
+ */
+/* ----------------------------------------------------------------------------*/
 struct Vector normalizing(struct Vector vec)
 {
     if (vec.x == 0 && vec.y == 0 && vec.z == 0)
@@ -28,6 +64,16 @@ struct Vector normalizing(struct Vector vec)
     return d;
 }
 
+/* ----------------------------------------------------------------------------*/
+/**
+ * @Synopsis: generate_spower derive power from a position speed
+ *
+ * @Param: spd
+ * @Param: s_p_p
+ *
+ * @Returns: power
+ */
+/* ----------------------------------------------------------------------------*/
 int generate_spower(Speed spd, float s_p_p)
 {
     int power = 0;
@@ -41,11 +87,32 @@ int generate_spower(Speed spd, float s_p_p)
     return power;
 }
 
+/* ----------------------------------------------------------------------------*/
+/**
+ * @Synopsis: generate_dpower derive power from a rotate(Direction) speed
+ *
+ * @Param: dspd
+ * @Param: d_p_p
+ *
+ * @Returns: power
+ */
+/* ----------------------------------------------------------------------------*/
 int generate_dpower(Dirspeed dspd, float d_p_p)
 {
     return fabsf(dspd) / d_p_p;
 }
 
+/* ----------------------------------------------------------------------------*/
+/**
+ * @Synopsis: generate_speed generate position speed from the vector which directed from origin to destination and a power indicated the strenth.
+ *
+ * @Param: vec
+ * @Param: power
+ * @Param: s_p_p
+ *
+ * @Returns: position speed
+ */
+/* ----------------------------------------------------------------------------*/
 Speed generate_speed(struct Vector vec, int power, float s_p_p)
 {
     struct Vector d;
@@ -59,6 +126,17 @@ Speed generate_speed(struct Vector vec, int power, float s_p_p)
         return (Speed)d;
 }
 
+/* ----------------------------------------------------------------------------*/
+/**
+ * @Synopsis: generate_dirspd generate rotate speed from the angle between original angle and the end angle and a power indicated the strenth
+ *
+ * @Param: agl
+ * @Param: power
+ * @Param: d_p_p
+ *
+ * @Returns: rotate speed
+ */
+/* ----------------------------------------------------------------------------*/
 Dirspeed generate_dirspd(Angle agl, int power, float d_p_p)
 {
     if (agl == 0.0)
@@ -73,6 +151,16 @@ Dirspeed generate_dirspd(Angle agl, int power, float d_p_p)
     return dspd;
 }
 
+/* ----------------------------------------------------------------------------*/
+/**
+ * @Synopsis: angle caculating the angle bewteen two vectors
+ *
+ * @Param: dir1
+ * @Param: dir2
+ *
+ * @Returns: angle
+ */
+/* ----------------------------------------------------------------------------*/
 Angle angle(struct Vector dir1, struct Vector dir2)
 {
     if ((dir1.x == 0 && dir1.y == 0 && dir1.z == 0)
@@ -88,6 +176,16 @@ Angle angle(struct Vector dir1, struct Vector dir2)
     return ang;
 }
 
+/* ----------------------------------------------------------------------------*/
+/**
+ * @Synopsis: vector generate the vector pointing from pos1 to pos2
+ *
+ * @Param: pos1
+ * @Param: pos2
+ *
+ * @Returns: vector
+ */
+/* ----------------------------------------------------------------------------*/
 struct Vector vector(Position pos1, Position pos2)
 {
     struct Vector dir;
@@ -97,6 +195,16 @@ struct Vector vector(Position pos1, Position pos2)
     return dir;
 }
 
+/* ----------------------------------------------------------------------------*/
+/**
+ * @Synopsis: in_scope judging if pos is inside scp
+ *
+ * @Param: scp
+ * @Param: pos
+ *
+ * @Returns: True or False 
+ */
+/* ----------------------------------------------------------------------------*/
 int in_scope(Scope scp, Position pos)
 {
     if ((scp.lb.x <= pos.x && pos.x <= scp.ru.x)
@@ -107,6 +215,16 @@ int in_scope(Scope scp, Position pos)
         return 0;
 }
 
+/* ----------------------------------------------------------------------------*/
+/**
+ * @Synopsis: up_scope judging if pos is upside scp
+ *
+ * @Param: scp
+ * @Param: pos
+ *
+ * @Returns: T/F
+ */
+/* ----------------------------------------------------------------------------*/
 int up_scope(Scope scp, Position pos)
 {
     if (( scp.ru.y < pos.y && (scp.lb.x <= pos.x && pos.x <= scp.ru.x)))
@@ -115,6 +233,16 @@ int up_scope(Scope scp, Position pos)
         return 0;
 }
 
+/* ----------------------------------------------------------------------------*/
+/**
+ * @Synopsis: down_scope judging if pos is downside scp
+ *
+ * @Param: scp
+ * @Param: pos
+ *
+ * @Returns: T/F
+ */
+/* ----------------------------------------------------------------------------*/
 int down_scope(Scope scp, Position pos)
 {
     if (( scp.lb.y > pos.y && (scp.lb.x <= pos.x && pos.x <= scp.ru.x)))
@@ -165,11 +293,31 @@ int above_scope(Scope scp, Position pos)
         return 0;
 }
 
+/* ----------------------------------------------------------------------------*/
+/**
+ * @Synopsis: modular get the modular of a vector
+ *
+ * @Param: vec
+ *
+ * @Returns: modular
+ */
+/* ----------------------------------------------------------------------------*/
 float modular(struct Vector vec)
 {
     return sqrt(vec.x*vec.x + vec.y*vec.y + vec.z*vec.z);
 }
 
+/* ----------------------------------------------------------------------------*/
+/**
+ * @Synopsis: intersection get the intersecton of a plane through point p and a line made by point a and b, while the plane and the line are perpendicular
+ *
+ * @Param: a
+ * @Param: b
+ * @Param: p
+ *
+ * @Returns: the intersection
+ */
+/* ----------------------------------------------------------------------------*/
 Position intersection(Position a, Position b, Position p)
 {
     Position re;
@@ -189,6 +337,16 @@ struct Vector add_vector(struct Vector vec1, struct Vector vec2)
     return re;
 }
 
+/* ----------------------------------------------------------------------------*/
+/**
+ * @Synopsis: equal_vector test if two vector are indentical
+ *
+ * @Param: vec1
+ * @Param: vec2
+ *
+ * @Returns: T/F
+ */
+/* ----------------------------------------------------------------------------*/
 int equal_vector(struct Vector vec1, struct Vector vec2)
 {
     if (vec1.x == vec2.x
@@ -199,6 +357,16 @@ int equal_vector(struct Vector vec1, struct Vector vec2)
         return 0;
 }
 
+/* ----------------------------------------------------------------------------*/
+/**
+ * @Synopsis: reflecting get the reflecting vector of inc_vec from the mirror plane with nor_vec as its normal vector
+ *
+ * @Param: inc_vec
+ * @Param: nor_vec
+ *
+ * @Returns: reflecting vector
+ */
+/* ----------------------------------------------------------------------------*/
 struct Vector reflecting(struct Vector inc_vec, struct Vector nor_vec)
 {
     if (inc_vec.x == 0.0 && inc_vec.y == 0.0 && inc_vec.z == 0.0)

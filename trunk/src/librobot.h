@@ -21,6 +21,7 @@ Tactics rbt_team_tactics(struct Player *);
 Position rbt_judge_ball_dest(struct Player *);
 int rbt_ball_flying_to_gate(Position, int);
 void stay_in_defence(struct Player *);
+void stay_in_attach(struct Player *);
 struct Player *find_to_passer(struct Player *);
 struct Vector pounce_vector(Position, Position, Position);
 int i_own_ball(struct Player *);
