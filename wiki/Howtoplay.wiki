@@ -9,7 +9,7 @@ Since this project has included a simple front-end program, you can play and tes
 = Details =
 
 To play the game: 
-     run engine first, then run testGUI
+     run engine first, then run testGUI (on an other terminal)
 
 Controls in testGUI:    
                "W S A D" to move player in up, down, left, and right directions.
