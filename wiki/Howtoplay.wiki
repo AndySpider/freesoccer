@@ -21,6 +21,6 @@ Controls in testGUI:
                "L" to long pass.
 
 
-               "right and left button of mouse" to change view point.
+               "right, left and middle buttons of mouse" to change view point.
 
 _(For more details about playing, see the attached README file)_
